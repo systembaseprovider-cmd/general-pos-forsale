@@ -1,0 +1,4712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Interactive POS Dashboard</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    [hidden] {
+      display: none !important;
+    }
+
+    :root {
+      --bg-dark: #0f172a;
+      --panel-left-bg: #f8fafc;
+      --panel-right-bg: #e0f2fe;
+      --border-color: #cbd5e1;
+      --sky-blue: #0284c7; 
+      --light-blue-bg: #0284c7;
+      --btn-blue-start: #38bdf8;
+      --btn-blue-end: #0284c7;
+      --btn-green-start: #22c55e;
+      --btn-green-end: #15803d;
+      --btn-dark-start: #334155;
+      --btn-dark-end: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .pos-container {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      background-color: #38bdf8;
+    }
+
+    /* ================= LEFT PANEL ================= */
+    .left-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--panel-left-bg);
+      border-right: 2px solid #94a3b8;
+    }
+
+    .top-amount-bar {
+      display: flex;
+      height: 90px;
+      background-color: #ffffff;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .amount-due-label {
+      background-color: var(--light-blue-bg);
+      color: #ffffff;
+      width: 170px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-left: 20px;
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: 1px;
+      border-right: 2px solid #38bdf8;
+    }
+
+    .total-display-box {
+      flex: 1;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding-right: 25px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: var(--sky-blue);
+      letter-spacing: -1px;
+    }
+
+    .item-table-header {
+      display: flex;
+      background-color: #e2e8f0;
+      padding: 10px 18px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #334155;
+      border-bottom: 1px solid var(--border-color);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .col-item { flex: 1; }
+    .col-qty { width: 90px; text-align: center; }
+    .col-price { width: 130px; text-align: right; }
+
+    .cart-items-area {
+      flex: 1;
+      background-color: #ffffff;
+      overflow-y: auto;
+    }
+
+    /* ================= TOUCH PRODUCT DASHBOARD ================= */
+    .product-dashboard { min-height: 100%; display: flex; flex-direction: column; gap: 12px; padding: 14px; background: #f8fafc; }
+    .product-dashboard-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .product-dashboard-heading { color: #0f172a; font-size: 1rem; font-weight: 800; }
+    .product-dashboard-heading small { display: block; margin-top: 3px; color: #64748b; font-size: 0.76rem; font-weight: 600; }
+    .product-dashboard-cart-button, .product-dashboard-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 6px; cursor: pointer; color: #ffffff; background: #0284c7; font-weight: 800; }
+    .product-dashboard-cart-button { min-height: 36px; padding: 0 12px; font-size: 0.78rem; white-space: nowrap; }
+    .product-dashboard-toggle { height: 32px; padding: 0 10px; font-size: 0.72rem; }
+    .product-dashboard-search { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid #93c5fd; border-radius: 7px; background: #ffffff; color: #0f172a; font-size: 0.9rem; font-weight: 600; outline: none; }
+    .product-dashboard-search:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+    .product-category-list { display: flex; flex-wrap: wrap; gap: 7px; }
+    .product-category-button { padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 999px; background: #ffffff; color: #475569; cursor: pointer; font-size: 0.76rem; font-weight: 800; }
+    .product-category-button.active { border-color: #0284c7; background: #0284c7; color: #ffffff; }
+    .product-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; align-content: start; }
+    .product-touch-card { min-height: 118px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 9px; background: #ffffff; color: #0f172a; text-align: left; cursor: pointer; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06); }
+    .product-touch-card:hover:not(:disabled), .product-touch-card:focus-visible:not(:disabled) { border-color: #0284c7; background: #f0f9ff; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); outline: none; }
+    .product-touch-card:disabled { cursor: not-allowed; opacity: 0.56; }
+    .product-touch-name { display: block; min-height: 38px; font-size: 0.88rem; font-weight: 800; line-height: 1.25; }
+    .product-touch-price { display: block; margin-top: 10px; color: #0284c7; font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 800; }
+    .product-touch-stock { display: block; margin-top: 5px; color: #64748b; font-size: 0.72rem; font-weight: 700; }
+    .product-touch-stock.out-of-stock { color: #dc2626; }
+    .product-dashboard-empty { padding: 32px 16px; border: 1px dashed #94a3b8; border-radius: 8px; color: #64748b; text-align: center; font-size: 0.88rem; font-weight: 700; }
+
+    /* CART ITEM STYLING */
+    .cart-row {
+      display: flex;
+      padding: 12px 18px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.95rem;
+      color: #1e293b;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    
+    .cart-row.item-row {
+      cursor: pointer;
+    }
+
+    .cart-row.item-row:hover {
+      background-color: #e0f2fe;
+    }
+
+    .cart-row.item-row.selected {
+      background-color: #bae6fd !important;
+      border-left: 5px solid #0284c7;
+      font-weight: 700;
+      color: #0369a1;
+    }
+
+    .cart-row:nth-child(even):not(.selected) {
+      background-color: #f8fafc;
+    }
+
+    .cart-row.subtotal-divider {
+      background-color: #fef3c7 !important;
+      border-top: 1px dashed #f59e0b;
+      border-bottom: 1px dashed #f59e0b;
+      font-weight: 800;
+      color: #92400e;
+      justify-content: space-between;
+      font-size: 0.9rem;
+    }
+
+    .cart-row.discount-row {
+      background-color: #dcfce7 !important;
+      border-top: 1px dashed #22c55e;
+      border-bottom: 1px dashed #22c55e;
+      font-weight: 800;
+      color: #15803d;
+      justify-content: space-between;
+      font-size: 0.9rem;
+    }
+
+    .account-input-area {
+      padding: 10px 16px;
+      background: #e2e8f0;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .account-input-area .input-field-wrapper input {
+      width: 100%;
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      height: 36px;
+      padding: 0 32px 0 12px;
+      background-color: #ffffff;
+      font-size: 0.88rem;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .bottom-bar {
+      height: 48px;
+      background-color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .bottom-left-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-tag {
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: #94a3b8;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .tool-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: #475569;
+      cursor: pointer;
+    }
+
+    /* ================= RIGHT PANEL ================= */
+    .right-panel {
+      width: 420px;
+      background-color: var(--panel-right-bg);
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 10px;
+      border-left: 1px solid #7dd3fc;
+    }
+
+    .header-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--light-blue-bg);
+      color: #ffffff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #38bdf8;
+    }
+
+    .cashier-info {
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #ffffff;
+    }
+
+    .live-clock {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .top-info-section {
+      display: flex;
+      gap: 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #bde0fe;
+    }
+
+    .info-labels {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .input-boxes {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .input-field-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-field-wrapper input {
+      width: 100%;
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      height: 28px;
+      padding: 0 26px 0 8px;
+      background-color: #ffffff;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .input-field-wrapper i {
+      position: absolute;
+      right: 8px;
+      font-size: 0.85rem;
+      color: #64748b;
+      pointer-events: none;
+    }
+
+    .txn-badge {
+      display: flex;
+      align-items: center;
+      height: 28px;
+      background-color: var(--light-blue-bg);
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 0 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      border: 1px solid #38bdf8;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      align-content: start;
+    }
+
+    .btn {
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 700;
+      gap: 8px;
+      height: 75px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      transition: all 0.1s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn-green {
+      background: linear-gradient(135deg, var(--btn-green-start), var(--btn-green-end));
+      color: #ffffff;
+      border: 1px solid #16a34a;
+    }
+
+    .btn-blue {
+      background: linear-gradient(135deg, var(--btn-blue-start), var(--btn-blue-end));
+      color: #ffffff;
+      border: 1px solid #0284c7;
+    }
+
+    .btn-dark {
+      background: linear-gradient(135deg, var(--btn-dark-start), var(--btn-dark-end));
+      color: #ffffff;
+      border: 1px solid #0f172a;
+    }
+
+    .btn i {
+      font-size: 1.3rem;
+    }
+
+    .right-summary-container {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-subtotal-small {
+      width: 100%;
+      height: 34px;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #ffffff;
+      border: 1px solid #0284c7;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .btn-subtotal-small:active {
+      transform: scale(0.98);
+    }
+
+    .right-summary-box {
+      background-color: #ffffff;
+      border: 1px solid #93c5fd;
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .summary-row-right {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .btn-checkout-small {
+      width: 100%;
+      height: 44px;
+      margin-top: 4px;
+      background: linear-gradient(135deg, var(--btn-green-start), var(--btn-green-end));
+      color: #ffffff;
+      border: 1px solid #16a34a;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-checkout-small:active {
+      transform: scale(0.98);
+    }
+
+    /* ================= GENERAL MODALS STYLING ================= */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(15, 23, 42, 0.75);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    body.admin-settings-open {
+      display: block;
+      height: auto;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    body.admin-settings-open .pos-container {
+      display: none;
+    }
+
+    #admin-settings-modal {
+      display: none;
+      align-items: stretch;
+      justify-content: flex-start;
+      background: #f1f5f9;
+      overflow: auto;
+      opacity: 1;
+      pointer-events: none;
+      transition: none;
+    }
+
+    #admin-settings-modal.active {
+      display: block;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      width: 440px;
+      border-radius: 12px;
+      border: 2px solid var(--sky-blue);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      background: var(--light-blue-bg);
+      color: #ffffff;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #ffffff;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .payment-summary-box {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .summary-row-modal {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .summary-row-modal.highlight {
+      font-size: 1.4rem;
+      color: var(--sky-blue);
+      font-weight: 800;
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 8px;
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .modal-btn-cancel {
+      background: #cbd5e1;
+      color: #334155;
+    }
+
+    .modal-btn-confirm {
+      background: #22c55e;
+      color: #ffffff;
+    }
+
+    .modal-btn-confirm:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .admin-settings-card {
+      width: 100%;
+      min-height: 100vh;
+      max-height: none;
+      border: 0;
+      border-radius: 0;
+      overflow: visible;
+      box-shadow: none;
+    }
+
+    .admin-settings-body {
+      width: min(1680px, 100%);
+      min-height: calc(100vh - 136px);
+      margin: 0 auto;
+      padding: 24px clamp(16px, 4vw, 56px);
+      overflow: visible;
+    }
+
+    .admin-settings-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      min-height: 64px;
+      padding: 12px clamp(16px, 4vw, 56px);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+    }
+
+    .admin-settings-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 13px;
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      border-radius: 7px;
+      background: transparent;
+      color: #ffffff;
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .admin-settings-footer {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      justify-content: flex-end;
+      padding-right: clamp(16px, 4vw, 56px);
+      padding-left: clamp(16px, 4vw, 56px);
+    }
+
+    .inventory-stock-summary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid #fbbf24;
+      border-radius: 8px;
+      background: #fffbeb;
+      color: #92400e;
+    }
+
+    .inventory-stock-summary.has-no-alerts {
+      border-color: #86efac;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .settings-table tr.low-stock-row td {
+      background: #fffbeb;
+    }
+
+    .settings-table tr.low-stock-row td:first-child {
+      box-shadow: inset 3px 0 #f59e0b;
+    }
+
+    .settings-stock-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .settings-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 12px;
+    }
+
+    .settings-tab {
+      padding: 9px 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .settings-tab.active {
+      background: #0284c7;
+      border-color: #0284c7;
+      color: #ffffff;
+    }
+
+    .settings-panel {
+      display: none;
+      gap: 14px;
+    }
+
+    .settings-panel.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .settings-table-wrap {
+      width: 100%;
+      max-height: min(62vh, 720px);
+      overflow: auto;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 700px) {
+      .admin-settings-header {
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .admin-settings-back {
+        padding: 8px;
+        font-size: 0.78rem;
+      }
+
+      .admin-settings-body {
+        padding: 16px 10px;
+      }
+
+      .settings-tabs {
+        position: sticky;
+        top: 64px;
+        z-index: 4;
+        padding: 10px;
+        background: #ffffff;
+      }
+
+      .settings-tab {
+        flex: 1 1 calc(50% - 8px);
+      }
+    }
+
+    .settings-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      background: #ffffff;
+      font-size: 0.82rem;
+    }
+
+    .settings-table th, .settings-table td {
+      padding: 8px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .settings-table th {
+      position: sticky;
+      top: 0;
+      background: #f1f5f9;
+      z-index: 1;
+      white-space: nowrap;
+    }
+
+    .settings-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      width: 100%;
+    }
+
+    .settings-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      color: #334155;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .settings-field input, .settings-field select, .settings-field textarea,
+    .settings-search {
+      width: 100%;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #0f172a;
+      font-weight: 500;
+    }
+
+    .settings-inline-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .settings-small-btn {
+      border: 0;
+      border-radius: 6px;
+      padding: 7px 10px;
+      color: #ffffff;
+      background: #0284c7;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .settings-small-btn.danger {
+      background: #b91c1c;
+    }
+
+    .settings-small-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .settings-permissions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+    }
+
+    .settings-permissions label {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      font-weight: 600;
+      font-size: 0.82rem;
+    }
+
+    .settings-message {
+      min-height: 20px;
+      color: #334155;
+      font-size: 0.85rem;
+      overflow-wrap: anywhere;
+    }
+
+    /* CASH INPUT CUSTOM */
+    .cash-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cash-input-group label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .cash-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .cash-input-wrapper span {
+      position: absolute;
+      left: 14px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #0284c7;
+    }
+
+    .cash-input-wrapper input {
+      width: 100%;
+      height: 50px;
+      padding-left: 38px;
+      padding-right: 14px;
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      border: 2px solid #0284c7;
+      border-radius: 8px;
+      outline: none;
+      color: #0f172a;
+    }
+
+    .quick-cash-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .quick-btn {
+      background: #e0f2fe;
+      border: 1px solid #7dd3fc;
+      color: #0369a1;
+      font-weight: 700;
+      padding: 10px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    /* Card Payment Visual Widget */
+    .card-visual-box {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border-radius: 10px;
+      padding: 16px;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 1px solid #475569;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.2);
+    }
+
+    .card-chip-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-chip {
+      width: 36px;
+      height: 26px;
+      background: #f59e0b;
+      border-radius: 4px;
+    }
+
+    /* E-Wallet Grid Selector */
+    .ewallet-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .ewallet-option {
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      color: #334155;
+      background: #ffffff;
+      transition: all 0.15s ease;
+    }
+
+    .ewallet-option.selected {
+      border-color: #0284c7;
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .ewallet-option i {
+      font-size: 1.3rem;
+    }
+
+    /* Discount Options List */
+    .discount-options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .discount-card-btn {
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      background: #ffffff;
+      transition: all 0.15s ease;
+    }
+
+    .discount-card-btn:hover {
+      border-color: #38bdf8;
+      background: #f0f9ff;
+    }
+
+    .discount-title {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #0f172a;
+    }
+
+    .discount-sub {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .discount-badge {
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    /* Customer Lookup List */
+    .customer-list {
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .customer-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .customer-item:hover {
+      background: #e0f2fe;
+      border-color: #38bdf8;
+    }
+
+    .customer-info-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .customer-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #0284c7;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+    }
+
+    .cust-tag {
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .cust-tag.vip { background: #fef3c7; color: #b45309; }
+    .cust-tag.regular { background: #e0f2fe; color: #0369a1; }
+    .cust-tag.member { background: #dcfce7; color: #15803d; }
+    .cust-tag.corporate { background: #f3e8ff; color: #6b21a8; }
+
+    /* HELD TRANSACTIONS STYLING */
+    .held-item-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: #f8fafc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .held-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .held-item-title {
+      font-weight: 800;
+      color: #0284c7;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .held-item-sub {
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .held-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-restore-held {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-restore-held:hover { background: #0369a1; }
+
+    .btn-delete-held {
+      background: #ef4444;
+      color: #ffffff;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .btn-delete-held:hover { background: #dc2626; }
+
+    /* Sales Report Stats Cards */
+    .stat-card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-card-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+
+    .stat-card-value {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0284c7;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .sales-breakdown-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .sales-breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    /* Drawer Animation Box */
+    .drawer-status-box {
+      text-align: center;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .drawer-icon-circle {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #dcfce7;
+      color: #16a34a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      border: 2px solid #22c55e;
+      animation: pulse-ring 1s infinite alternate;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); }
+      100% { transform: scale(1.05); }
+    }
+
+    /* Recent Transactions List (Reprint Modal) */
+    .recent-txn-list {
+      max-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .recent-txn-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .recent-txn-item:hover {
+      background: #e0f2fe;
+      border-color: #38bdf8;
+    }
+
+    /* ================= RECEIPT PREVIEW POPUP STYLES ================= */
+    .receipt-preview-card {
+      background: #ffffff;
+      width: 100%;
+      max-height: 380px;
+      overflow-y: auto;
+      padding: 16px;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      color: #000;
+      line-height: 1.3;
+    }
+
+    /* Shared Thermal Receipt Styling */
+    .t-header { text-align: center; margin-bottom: 8px; }
+    .t-title { font-size: 15px; font-weight: bold; text-transform: uppercase; }
+    .t-sub { font-size: 11px; }
+    .t-divider { border-top: 1px dashed #000; margin: 6px 0; }
+    .t-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+    .t-row-bold { font-weight: bold; }
+    .t-item-name { font-weight: bold; margin-top: 4px; }
+    .t-item-details { display: flex; justify-content: space-between; padding-left: 10px; font-size: 11px; }
+    .t-footer { text-align: center; margin-top: 10px; font-size: 11px; }
+
+    /* ================= THERMAL RECEIPT PRINT STYLES ================= */
+    #thermal-receipt-area {
+      display: none;
+    }
+
+    @media print {
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+      body {
+        background: #ffffff !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      .pos-container, .modal-overlay {
+        display: none !important;
+      }
+      #thermal-receipt-area {
+        display: block !important;
+        width: 78mm;
+        margin: 0 auto;
+        padding: 8px 4px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 12px;
+        color: #000000;
+        background: #ffffff;
+        line-height: 1.3;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="pos-container">
+    
+    <!-- LEFT PANEL (Cart & Totals) -->
+    <div class="left-panel">
+      <!-- TOP MAIN AMOUNT DUE BAR -->
+      <div class="top-amount-bar">
+        <div class="amount-due-label">
+          <span>AMOUNT</span>
+          <span>DUE :</span>
+        </div>
+        <div class="total-display-box">
+          <span id="total-amount">0.00</span>
+        </div>
+      </div>
+
+      <!-- Item Table Header -->
+      <div class="item-table-header" id="item-table-header">
+        <span class="col-item">Item Description</span>
+        <span class="col-qty">Qty</span>
+        <span class="col-price">Price</span>
+      </div>
+
+      <!-- Main Cart Items List Area -->
+      <div class="cart-items-area" id="cart-list">
+        <!-- Dynamic items appear here -->
+      </div>
+
+      <!-- ACCOUNT HERE INPUT FIELD BELOW CART -->
+      <div class="account-input-area">
+        <div class="input-field-wrapper">
+          <input type="text" id="account-input" placeholder="Account / Customer Name Here...">
+          <i class="fa-solid fa-user-tag"></i>
+        </div>
+      </div>
+
+      <!-- Bottom Toolbar -->
+      <div class="bottom-bar">
+        <div class="bottom-left-tools">
+          <span class="status-tag" id="system-status-tag">Ready</span>
+          <button class="product-dashboard-toggle" id="btn-product-dashboard" type="button" aria-pressed="false"><i class="fa-solid fa-table-cells-large"></i><span>PRODUCTS</span></button>
+          <button class="tool-btn" id="tool-user" title="User"><i class="fa-solid fa-user"></i></button>
+          <button class="tool-btn" id="tool-orders" title="Held Orders List"><i class="fa-solid fa-clipboard-list"></i></button>
+          <button class="tool-btn" id="tool-settings" title="Settings"><i class="fa-solid fa-gear"></i></button>
+          <button class="tool-btn" id="tool-wallet" title="Wallet"><i class="fa-solid fa-wallet"></i></button>
+        </div>
+        <div style="font-size: 0.8rem; font-weight: 600; color: #475569;">
+          System Status: <span style="color: #16a34a; font-weight: 700;">Online</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL (Keypad, Menu Grid, Subtotal Button & VAT Computation) -->
+    <div class="right-panel">
+      
+      <!-- Cashier Name & Live Clock Header -->
+      <div class="header-top-bar">
+        <div class="cashier-info">
+          <i class="fa-solid fa-circle-user"></i>
+          <span id="cashier-name-display">Cashier: Juan Dela Cruz</span>
+          <button type="button" class="tool-btn" id="btn-change-pin" title="Change password/PIN" aria-label="Change password/PIN"><i class="fa-solid fa-key"></i></button>
+          <button type="button" class="tool-btn" id="btn-logout" title="Log out" aria-label="Log out"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+        <div class="live-clock" id="clock-display">00:00:00 AM</div>
+      </div>
+
+      <!-- Top Info Fields (Scan, Search, Live Txn) -->
+      <div class="top-info-section">
+        <div class="info-labels">
+          <label for="scan-input">Scan Item:</label>
+          <label for="search-input">Search Item:</label>
+          <div>Transaction:</div>
+        </div>
+        <div class="input-boxes">
+          <div class="input-field-wrapper">
+            <input type="text" id="scan-input" placeholder="Scan barcode (101, 102, 103)..." autofocus autocomplete="off">
+            <i class="fa-solid fa-barcode"></i>
+          </div>
+          <div class="input-field-wrapper">
+            <input type="text" id="search-input" placeholder="Search item name...">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+          <div class="txn-badge" id="txn-number">01-2026-00001</div>
+        </div>
+      </div>
+
+      <!-- FULLY FUNCTIONAL MENU BUTTON GRID -->
+      <div class="action-grid">
+        <!-- Row 1: Primary Payments -->
+        <button class="btn btn-green" id="btn-cash-payment">
+          <i class="fa-solid fa-money-bill-1-wave"></i>
+          <span>CASH PAYMENT</span>
+        </button>
+        <button class="btn btn-blue" id="btn-card-payment">
+          <i class="fa-solid fa-credit-card"></i>
+          <span>CARD PAYMENT</span>
+        </button>
+        <button class="btn btn-blue" id="btn-ewallet-payment">
+          <i class="fa-solid fa-qrcode"></i>
+          <span>E-WALLET / GCASH</span>
+        </button>
+        <button class="btn btn-blue" id="btn-bank-payment">
+          <i class="fa-solid fa-building-columns"></i>
+          <span>BANK TRANSFER</span>
+        </button>
+
+        <!-- Row 2: Cart Modifiers -->
+        <button class="btn btn-blue" id="btn-discount">
+          <i class="fa-solid fa-percent"></i>
+          <span>DISCOUNT</span>
+        </button>
+        <button class="btn btn-blue" id="btn-hold-order">
+          <i class="fa-solid fa-pause"></i>
+          <span>HOLD ORDER</span>
+        </button>
+        <button class="btn btn-dark" id="btn-void">
+          <i class="fa-solid fa-xmark"></i>
+          <span>VOID CART</span>
+        </button>
+
+        <!-- Row 3: Utilities -->
+        <button class="btn btn-blue" id="btn-split-bill">
+          <i class="fa-solid fa-arrows-split-up-and-left"></i>
+          <span>SPLIT BILL</span>
+        </button>
+        <button class="btn btn-blue" id="btn-print-receipt">
+          <i class="fa-solid fa-print"></i>
+          <span>PRINT RECEIPT</span>
+        </button>
+        <button class="btn btn-blue" id="btn-refund-sale">
+          <i class="fa-solid fa-arrow-rotate-left"></i>
+          <span>REFUND SALE</span>
+        </button>
+        <button class="btn btn-dark" id="btn-void-sale">
+          <i class="fa-solid fa-ban"></i>
+          <span>VOID SALE</span>
+        </button>
+        <button class="btn btn-blue" id="btn-price-override">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>PRICE OVERRIDE</span>
+        </button>
+
+        <!-- Row 4: Customer & Reports -->
+        <button class="btn btn-blue" id="btn-customer-lookup">
+          <i class="fa-solid fa-user-gear"></i>
+          <span>CUSTOMER LOOKUP</span>
+        </button>
+        <button class="btn btn-blue" id="btn-sales-report">
+          <i class="fa-solid fa-chart-column"></i>
+          <span>SALES REPORT</span>
+        </button>
+        <button class="btn btn-blue" id="btn-open-drawer">
+          <i class="fa-solid fa-vault"></i>
+          <span>OPEN DRAWER</span>
+        </button>
+      </div>
+
+      <!-- RIGHT BOTTOM CONTAINER -->
+      <div class="right-summary-container">
+        
+        <button class="btn-subtotal-small" id="btn-subtotal">
+          <i class="fa-solid fa-calculator"></i>
+          <span>SUBTOTAL</span>
+        </button>
+
+        <div class="right-summary-box">
+          <div class="summary-row-right">
+            <span>Vatable Sales:</span>
+            <span>₱<span id="cart-vatable">0.00</span></span>
+          </div>
+          <div class="summary-row-right">
+            <span>VAT (12%):</span>
+            <span>₱<span id="cart-vat">0.00</span></span>
+          </div>
+
+          <button class="btn-checkout-small" id="btn-checkout-bottom">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>CHECK OUT (PAYMENT)</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- 1. CASH PAYMENT MODAL -->
+  <div class="modal-overlay" id="cash-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-money-bill-wave"></i> Process Cash Payment</span>
+        <button class="modal-close" id="cash-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="payment-summary-box">
+          <div class="summary-row-modal">
+            <span>Total Amount Due:</span>
+            <span>₱<span id="modal-total-due">0.00</span></span>
+          </div>
+          <div class="summary-row-modal highlight">
+            <span>Change (Sukli):</span>
+            <span>₱<span id="modal-change-due">0.00</span></span>
+          </div>
+        </div>
+
+        <div class="cash-input-group">
+          <label for="cash-tendered-input">Enter Cash Tendered (Bayad):</label>
+          <div class="cash-input-wrapper">
+            <span>₱</span>
+            <input type="number" id="cash-tendered-input" placeholder="0.00" step="any">
+          </div>
+        </div>
+
+        <div class="quick-cash-grid">
+          <button class="quick-btn" id="qb-exact">Exact</button>
+          <button class="quick-btn" onclick="addQuickCash(100)">₱100</button>
+          <button class="quick-btn" onclick="addQuickCash(500)">₱500</button>
+          <button class="quick-btn" onclick="addQuickCash(1000)">₱1,000</button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" id="btn-cancel-cash">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="btn-confirm-cash" disabled>Complete Sale</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card payment is recorded as a mode only; no card is charged by this app. -->
+  <div class="modal-overlay" id="card-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-credit-card"></i> Record Card Payment</span>
+        <button class="modal-close" id="card-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="payment-summary-box">
+          <div class="summary-row-modal">
+            <span>Total Payable Amount:</span>
+            <span style="font-weight: 800; color: #0284c7; font-size: 1.2rem;">₱<span id="card-modal-total-due">0.00</span></span>
+          </div>
+        </div>
+
+        <!-- Dynamic Visual Card Display -->
+        <div class="card-visual-box">
+          <div class="card-chip-row">
+            <div class="card-chip"></div>
+            <i class="fa-brands fa-cc-visa" style="font-size: 1.8rem; color: #cbd5e1;"></i>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; letter-spacing: 2px; font-size: 1.05rem; color: #38bdf8;">
+            •••• •••• •••• <span id="card-preview-digits" style="color: #ffffff; font-weight: 800;">CARD</span>
+          </div>
+          <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">
+            Manual entry only; verify approval on your card terminal before completing this sale. Do not enter the full card number.
+          </div>
+        </div>
+
+        <!-- 2-COLUMN INPUT GRID FOR LAST 4 DIGITS & BATCH NO -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="cash-input-group">
+            <label for="card-digits-input">Last 4 Digits:</label>
+            <div class="input-field-wrapper">
+              <input type="text" id="card-digits-input" maxlength="4" placeholder="1234" style="height: 40px; font-weight: 700; letter-spacing: 2px;">
+              <i class="fa-solid fa-credit-card"></i>
+            </div>
+          </div>
+
+          <div class="cash-input-group">
+            <label for="card-batch-input">Batch No.:</label>
+            <div class="input-field-wrapper">
+              <input type="text" id="card-batch-input" placeholder="0001" style="height: 40px; font-weight: 700;">
+              <i class="fa-solid fa-layer-group"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="cash-input-group">
+          <label for="card-bank-input">Bank / Card Terminal:</label>
+          <div class="input-field-wrapper">
+            <input type="text" id="card-bank-input" maxlength="80" placeholder="e.g. BDO, BPI, Maya Terminal" style="height: 40px; font-weight: 700;">
+            <i class="fa-solid fa-building-columns"></i>
+          </div>
+        </div>
+
+        <div class="cash-input-group">
+          <label for="card-ref-input">Approval / Reference Number:</label>
+          <div class="input-field-wrapper">
+            <input type="text" id="card-ref-input" maxlength="120" placeholder="Enter the approved transaction reference" style="height: 40px; font-weight: 700;">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+        </div>
+        <label style="display: flex; align-items: flex-start; gap: 8px; line-height: 1.4;">
+          <input type="checkbox" id="card-payment-verified" style="margin-top: 3px;">
+          I verified that this card payment was approved on the bank/card terminal.
+        </label>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" id="btn-cancel-card">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="btn-confirm-card">Record Card Sale</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODERN E-WALLET MODAL -->
+  <div class="modal-overlay" id="ewallet-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-qrcode"></i> E-Wallet / Digital Payment</span>
+        <button class="modal-close" id="ewallet-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="payment-summary-box">
+          <div class="summary-row-modal">
+            <span>Total Payable Amount:</span>
+            <span style="font-weight: 800; color: #0284c7; font-size: 1.2rem;">₱<span id="ewallet-modal-total-due">0.00</span></span>
+          </div>
+        </div>
+
+        <div class="cash-input-group">
+          <label>Select Provider:</label>
+          <div class="ewallet-grid">
+            <div class="ewallet-option selected" data-wallet="GCash" onclick="selectWalletProvider(this)">
+              <i class="fa-solid fa-mobile-screen-button" style="color: #0284c7;"></i> GCash
+            </div>
+            <div class="ewallet-option" data-wallet="Maya" onclick="selectWalletProvider(this)">
+              <i class="fa-solid fa-wallet" style="color: #16a34a;"></i> Maya
+            </div>
+            <div class="ewallet-option" data-wallet="QR Ph" onclick="selectWalletProvider(this)">
+              <i class="fa-solid fa-qrcode" style="color: #ea580c;"></i> QR Ph
+            </div>
+            <div class="ewallet-option" data-wallet="ShopeePay" onclick="selectWalletProvider(this)">
+              <i class="fa-solid fa-bag-shopping" style="color: #dc2626;"></i> ShopeePay
+            </div>
+          </div>
+        </div>
+
+        <div class="cash-input-group">
+          <label for="ewallet-ref-input">E-Wallet Reference Number:</label>
+          <div class="input-field-wrapper">
+            <input type="text" id="ewallet-ref-input" maxlength="120" placeholder="Enter the completed transaction reference" style="height: 42px; font-weight: 700;">
+            <i class="fa-solid fa-barcode"></i>
+          </div>
+        </div>
+        <label style="display: flex; align-items: flex-start; gap: 8px; line-height: 1.4;">
+          <input type="checkbox" id="ewallet-payment-verified" style="margin-top: 3px;">
+          I verified in the provider app that the payment was received.
+        </label>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" id="btn-cancel-ewallet">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="btn-confirm-ewallet">Confirm Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="bank-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-building-columns"></i> Bank Transfer</span>
+        <button class="modal-close" id="bank-modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="payment-summary-box">
+          <div class="summary-row-modal">
+            <span>Total Payable Amount:</span>
+            <span style="font-weight: 800; color: #0284c7; font-size: 1.2rem;">₱<span id="bank-modal-total-due">0.00</span></span>
+          </div>
+        </div>
+        <div class="cash-input-group">
+          <label for="bank-name-input">Bank:</label>
+          <div class="input-field-wrapper">
+            <input type="text" id="bank-name-input" maxlength="80" placeholder="e.g. BDO, BPI, Metrobank">
+            <i class="fa-solid fa-building-columns"></i>
+          </div>
+        </div>
+        <div class="cash-input-group">
+          <label for="bank-ref-input">Transfer Reference Number:</label>
+          <div class="input-field-wrapper">
+            <input type="text" id="bank-ref-input" maxlength="120" placeholder="Enter the completed transfer reference">
+            <i class="fa-solid fa-barcode"></i>
+          </div>
+        </div>
+        <label style="display: flex; align-items: flex-start; gap: 8px; line-height: 1.4;">
+          <input type="checkbox" id="bank-payment-verified" style="margin-top: 3px;">
+          I verified in the bank account that the transfer was received.
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" id="btn-cancel-bank">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="btn-confirm-bank">Confirm Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MODERN DISCOUNT MODAL -->
+  <div class="modal-overlay" id="discount-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-percent"></i> Apply Discount Menu</span>
+        <button class="modal-close" id="discount-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="discount-options-grid">
+          
+          <div class="discount-card-btn" onclick="applyDiscountType('senior')">
+            <div>
+              <div class="discount-title">Senior Citizen / PWD</div>
+              <div class="discount-sub">Statutory 20% Discount</div>
+            </div>
+            <span class="discount-badge">20% OFF</span>
+          </div>
+
+          <div class="discount-card-btn" onclick="applyDiscountType('promo')">
+            <div>
+              <div class="discount-title">Special Promo</div>
+              <div class="discount-sub">Storewide Promotional Discount</div>
+            </div>
+            <span class="discount-badge" style="background: #16a34a;">10% OFF</span>
+          </div>
+
+          <div class="payment-summary-box" style="margin-top: 4px;">
+            <label style="font-size: 0.85rem; font-weight: 700; color: #1e293b;">Custom Discount Amount (₱):</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="number" id="custom-discount-input" placeholder="0.00" style="flex:1; height: 38px; border: 1px solid #93c5fd; border-radius: 6px; padding: 0 10px; font-weight: 700; outline: none;">
+              <button onclick="applyDiscountType('custom')" style="background: #0284c7; color: white; border: none; padding: 0 16px; border-radius: 6px; font-weight: 700; cursor: pointer;">APPLY</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer" style="flex-direction: column;">
+        <button class="modal-btn modal-btn-cancel" onclick="applyDiscountType('clear')" style="background: #ef4444; color: white; width: 100%;">
+          <i class="fa-solid fa-trash-can"></i> REMOVE DISCOUNT
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. MODERN CUSTOMER LOOKUP MODAL -->
+  <div class="modal-overlay" id="customer-modal">
+    <div class="modal-card" style="width: 480px;">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-user-gear"></i> Customer Lookup Directory</span>
+        <button class="modal-close" id="customer-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="input-field-wrapper">
+          <input type="text" id="cust-search-input" placeholder="Search customer name or filter..." oninput="filterCustomerDirectory()" style="height: 40px;">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+
+        <div class="customer-list" id="customer-directory-list">
+          <!-- Dynamic Customers rendered here -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" id="btn-close-customer">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. MODERN PRICE OVERRIDE MODAL -->
+  <div class="modal-overlay" id="price-override-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-pen-to-square"></i> Price Override</span>
+        <button class="modal-close" id="price-override-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="payment-summary-box">
+          <div class="summary-row-modal">
+            <span>Selected Item:</span>
+            <span style="font-weight: 800; color: #0284c7;" id="override-item-name">---</span>
+          </div>
+          <div class="summary-row-modal">
+            <span>Current Price:</span>
+            <span style="font-weight: 700;" id="override-current-price">₱0.00</span>
+          </div>
+        </div>
+
+        <div class="cash-input-group">
+          <label for="override-new-price-input">Enter New Unit Price (₱):</label>
+          <div class="cash-input-wrapper">
+            <span>₱</span>
+            <input type="number" id="override-new-price-input" placeholder="0.00" step="any">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" id="btn-cancel-price-override">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="btn-confirm-price-override">Update Price</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. MODERN SALES REPORT DASHBOARD MODAL -->
+  <div class="modal-overlay" id="sales-report-modal">
+    <div class="modal-card" style="width: 480px;">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-chart-column"></i> Shift Sales Summary Report</span>
+        <button class="modal-close" id="sales-report-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="stat-card-grid">
+          <div class="stat-card">
+            <span class="stat-card-title">Gross Sales Total</span>
+            <span class="stat-card-value">₱<span id="sr-total-sales">0.00</span></span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-title">Completed Txns</span>
+            <span class="stat-card-value" style="color: #16a34a;" id="sr-total-count">0</span>
+          </div>
+        </div>
+
+        <div class="sales-breakdown-list">
+          <div style="font-weight: 800; font-size: 0.85rem; color: #0f172a; text-transform: uppercase; margin-bottom: 4px;">
+            Payment Breakdown
+          </div>
+          <div class="sales-breakdown-row">
+            <span><i class="fa-solid fa-money-bill-wave" style="color: #16a34a;"></i> Cash Sales:</span>
+            <span>₱<span id="sr-cash-sales">0.00</span></span>
+          </div>
+          <div class="sales-breakdown-row">
+            <span><i class="fa-solid fa-credit-card" style="color: #0284c7;"></i> Card Payments:</span>
+            <span>₱<span id="sr-card-sales">0.00</span></span>
+          </div>
+          <div class="sales-breakdown-row">
+            <span><i class="fa-solid fa-building-columns" style="color: #7c3aed;"></i> Bank Transfers:</span>
+            <span>₱<span id="sr-bank-sales">0.00</span></span>
+          </div>
+          <div class="sales-breakdown-row">
+            <span><i class="fa-solid fa-qrcode" style="color: #ea580c;"></i> E-Wallet Payments:</span>
+            <span>₱<span id="sr-ewallet-sales">0.00</span></span>
+          </div>
+        </div>
+        <div id="audit-log-panel" style="display: none; margin-top: 16px;">
+          <div style="font-weight: 800; margin-bottom: 8px;">Recent Audit Events</div>
+          <div id="audit-log-list" style="max-height: 260px; overflow-y: auto;"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-confirm" id="btn-view-audit" style="display: none;">View Audit Log</button>
+        <button class="modal-btn modal-btn-cancel" id="btn-close-sales-report" style="width: 100%;">Close Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. MODERN OPEN DRAWER MODAL -->
+  <div class="modal-overlay" id="open-drawer-modal">
+    <div class="modal-card" style="width: 380px;">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-vault"></i> Cash Drawer Status</span>
+        <button class="modal-close" id="open-drawer-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="drawer-status-box">
+          <div class="drawer-icon-circle">
+            <i class="fa-solid fa-lock-open"></i>
+          </div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: #0f172a;">Cash Drawer Opened!</div>
+          <div style="font-size: 0.82rem; color: #64748b; font-weight: 600;">
+            Drawer signal triggered successfully.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-confirm" id="btn-close-drawer-modal" style="width: 100%; background: #0284c7;">OK / CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="admin-settings-modal">
+    <div class="modal-card admin-settings-card">
+      <div class="modal-header admin-settings-header">
+        <span><i class="fa-solid fa-gear"></i> Admin Modules</span>
+        <button type="button" class="admin-settings-back" id="admin-settings-close" aria-label="Return to POS">
+          <i class="fa-solid fa-arrow-left"></i> Back to POS
+        </button>
+      </div>
+      <div class="modal-body admin-settings-body">
+        <nav class="settings-tabs" id="admin-settings-tabs" aria-label="Admin modules">
+          <button type="button" class="settings-tab active" data-settings-tab="inventory">Inventory</button>
+          <button type="button" class="settings-tab" data-settings-tab="products">Products List</button>
+          <button type="button" class="settings-tab" data-settings-tab="users">User Management</button>
+          <button type="button" class="settings-tab" data-settings-tab="branding">App Branding</button>
+        </nav>
+        <div class="settings-message" id="admin-settings-message" aria-live="polite"></div>
+
+        <section class="settings-panel active" data-settings-panel="inventory">
+          <div>
+            <h3>Inventory</h3>
+            <p style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">Add or remove stock with a required reason. Sales, refunds, voids, and opening quantities are recorded in the same movement history.</p>
+          </div>
+          <div class="inventory-stock-summary" id="inventory-stock-summary" role="status" aria-live="polite">
+            <strong id="inventory-low-stock-count">Checking reorder levels...</strong>
+            <button type="button" class="settings-small-btn" id="inventory-low-stock-filter" aria-pressed="false">Show low stock</button>
+          </div>
+          <label class="settings-field">Search barcode, SKU, or item name
+            <input id="inventory-search" class="settings-search" type="search" placeholder="Scan barcode or type to search">
+          </label>
+          <div class="settings-table-wrap">
+            <table class="settings-table">
+              <thead><tr><th>Barcode</th><th>SKU</th><th>Item Name</th><th>UOM</th><th>Price</th><th>Reorder</th><th>Available Balance</th><th>Actions</th></tr></thead>
+              <tbody id="inventory-products-body"></tbody>
+            </table>
+          </div>
+          <div id="inventory-adjust-panel" style="display: none; padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc;">
+            <strong id="inventory-selected-product"></strong>
+            <div class="settings-form-grid" style="margin-top: 10px;">
+              <label class="settings-field">Quantity
+                <input id="inventory-adjust-quantity" type="number" min="1" step="1" value="1">
+              </label>
+              <label class="settings-field" style="grid-column: span 2;">Reason (required, 5-200 characters)
+                <input id="inventory-adjust-reason" maxlength="200" type="text" placeholder="Purchase, correction, damaged item...">
+              </label>
+            </div>
+            <div class="settings-inline-actions" style="margin-top: 10px;">
+              <button type="button" class="settings-small-btn" id="inventory-add-stock">Add stock</button>
+              <button type="button" class="settings-small-btn danger" id="inventory-remove-stock">Remove stock</button>
+              <button type="button" class="settings-small-btn" id="inventory-cancel-adjust">Cancel</button>
+              <span class="settings-message" id="inventory-adjust-message"></span>
+            </div>
+          </div>
+          <div>
+            <strong>Recent Inventory Movements</strong>
+            <div class="settings-table-wrap" style="margin-top: 8px;">
+              <table class="settings-table">
+                <thead><tr><th>Date</th><th>Type</th><th>Barcode / SKU</th><th>Item</th><th>Change</th><th>Balance</th><th>User</th><th>Reason / Reference</th></tr></thead>
+                <tbody id="inventory-movements-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-panel" data-settings-panel="products">
+          <div>
+            <h3>Products List</h3>
+            <p style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">Use a barcode scanner or enter the barcode manually. Initial quantity is recorded as an opening movement; adjust existing stock in Inventory.</p>
+          </div>
+          <label class="settings-field">Search products
+            <input id="products-search" class="settings-search" type="search" placeholder="Barcode, SKU, or item name">
+          </label>
+          <div class="settings-table-wrap">
+            <table class="settings-table">
+              <thead><tr><th>Barcode</th><th>SKU</th><th>Item Name</th><th>UOM</th><th>Price</th><th>Reorder</th><th>Available</th><th>Actions</th></tr></thead>
+              <tbody id="products-list-body"></tbody>
+            </table>
+          </div>
+          <form id="product-admin-form" style="padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc;">
+            <strong id="product-form-title">Add Product</strong>
+            <input type="hidden" id="product-admin-id">
+            <div class="settings-form-grid" style="margin-top: 10px;">
+              <label class="settings-field">Barcode (scan or type)
+                <input id="product-admin-barcode" type="text" maxlength="120" required autocomplete="off">
+              </label>
+              <label class="settings-field">SKU
+                <input id="product-admin-sku" type="text" maxlength="80">
+              </label>
+              <label class="settings-field">Item Name
+                <input id="product-admin-name" type="text" maxlength="160" required>
+              </label>
+              <label class="settings-field">UOM
+                <input id="product-admin-uom" type="text" maxlength="30" value="pcs" required>
+              </label>
+              <label class="settings-field">Price
+                <input id="product-admin-price" type="number" min="0" step="0.01" required>
+              </label>
+              <label class="settings-field">Reorder Level
+                <input id="product-admin-reorder" type="number" min="0" step="1" value="0" required>
+              </label>
+              <label class="settings-field">Initial Quantity
+                <input id="product-admin-initial-qty" type="number" min="0" step="1" value="0" required>
+              </label>
+            </div>
+            <div class="settings-inline-actions" style="margin-top: 10px;">
+              <button type="submit" class="settings-small-btn" id="product-admin-save">Save Product</button>
+              <button type="button" class="settings-small-btn" id="product-admin-cancel" style="display: none;">Cancel Edit</button>
+              <span class="settings-message" id="product-admin-message"></span>
+            </div>
+          </form>
+        </section>
+
+        <section class="settings-panel" data-settings-panel="users">
+          <div>
+            <h3>User Management</h3>
+            <p style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">Access checkboxes are enforced by the server, not just hidden in the screen. Admin accounts always retain full access.</p>
+          </div>
+          <div class="settings-table-wrap">
+            <table class="settings-table">
+              <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th>Modules</th><th>Actions</th></tr></thead>
+              <tbody id="users-list-body"></tbody>
+            </table>
+          </div>
+          <form id="user-admin-form" style="padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc;">
+            <strong id="user-form-title">Add User</strong>
+            <input type="hidden" id="user-admin-id">
+            <div class="settings-form-grid" style="margin-top: 10px;">
+              <label class="settings-field">Name
+                <input id="user-admin-name" type="text" maxlength="120" required>
+              </label>
+              <label class="settings-field">Username
+                <input id="user-admin-username" type="text" minlength="3" maxlength="64" pattern="[A-Za-z0-9._-]+" required>
+              </label>
+              <label class="settings-field">Password (minimum 8 characters)
+                <input id="user-admin-password" type="password" minlength="8" autocomplete="new-password">
+              </label>
+              <label class="settings-field">Role
+                <select id="user-admin-role"><option value="cashier">Cashier</option><option value="admin">Admin</option></select>
+              </label>
+            </div>
+            <fieldset class="settings-permissions" id="user-admin-permissions">
+              <legend style="padding: 0 6px; font-size: 0.82rem; font-weight: 700;">Allowed Modules</legend>
+              <label><input type="checkbox" data-user-permission="pos"> POS Sales</label>
+              <label><input type="checkbox" data-user-permission="inventory"> Inventory</label>
+              <label><input type="checkbox" data-user-permission="products"> Products List</label>
+              <label><input type="checkbox" data-user-permission="reports"> Reports</label>
+            </fieldset>
+            <div class="settings-inline-actions" style="margin-top: 10px;">
+              <button type="submit" class="settings-small-btn" id="user-admin-save">Save User</button>
+              <button type="button" class="settings-small-btn" id="user-admin-cancel" style="display: none;">Cancel Edit</button>
+              <span class="settings-message" id="user-admin-message"></span>
+            </div>
+          </form>
+        </section>
+
+        <section class="settings-panel" data-settings-panel="branding">
+          <div>
+            <h3>App Branding and Receipt Details</h3>
+            <p style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">The same verified details appear on login and printed receipts. Logo must be PNG, JPEG, or WebP and no larger than 512 KB.</p>
+          </div>
+          <form id="branding-admin-form">
+            <div class="settings-form-grid">
+              <label class="settings-field">App / Store Name
+                <input id="branding-app-name" type="text" maxlength="80" required>
+              </label>
+              <label class="settings-field">Address
+                <input id="branding-address" type="text" maxlength="300">
+              </label>
+              <label class="settings-field">TIN
+                <input id="branding-tin" type="text" maxlength="50">
+              </label>
+              <label class="settings-field">Phone
+                <input id="branding-phone" type="text" maxlength="50">
+              </label>
+              <label class="settings-field" style="grid-column: 1 / -1;">Receipt Footer
+                <textarea id="branding-receipt-footer" maxlength="240" rows="2"></textarea>
+              </label>
+              <label class="settings-field">Logo (PNG/JPEG/WebP, up to 512 KB)
+                <input id="branding-logo-file" type="file" accept="image/png,image/jpeg,image/webp">
+              </label>
+            </div>
+            <div class="settings-inline-actions" style="margin-top: 12px;">
+              <img id="branding-logo-preview" alt="Logo preview" style="display: none; width: 96px; height: 72px; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+              <button type="button" class="settings-small-btn danger" id="branding-remove-logo">Remove logo</button>
+              <button type="submit" class="settings-small-btn">Save Branding</button>
+            </div>
+          </form>
+        </section>
+      </div>
+      <div class="modal-footer admin-settings-footer">
+        <button type="button" class="modal-btn modal-btn-cancel" id="admin-settings-close-footer">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. MODERN REPRINT RECEIPT SELECTION MODAL -->
+  <div class="modal-overlay" id="reprint-modal">
+    <div class="modal-card" style="width: 480px;">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-print"></i> Select Receipt To Reprint</span>
+        <button class="modal-close" id="reprint-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="cash-input-group">
+          <label for="reprint-search-input">Search / Enter Transaction Number:</label>
+          <div class="input-field-wrapper">
+            <input type="text" id="reprint-search-input" placeholder="e.g. 01-2026-00001" style="height: 40px; font-weight: 700;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+        </div>
+
+        <div style="font-weight: 700; font-size: 0.82rem; color: #475569; text-transform: uppercase; margin-top: 4px;">
+          Or Select From Recent Shift History:
+        </div>
+
+        <div class="recent-txn-list" id="recent-txn-history-container">
+          <!-- Dynamic recent completed sales rendered here -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" id="btn-cancel-reprint">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="btn-confirm-reprint-search" style="background: #0284c7;">Load Receipt</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="refund-modal">
+    <div class="modal-card" style="width: 580px;">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-arrow-rotate-left"></i> Refund Sale</span>
+        <button class="modal-close" id="refund-modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
+        <p style="font-size: 0.82rem; color: #64748b;">
+          Select item quantities and enter a reason. Refunded items are returned to stock. Process the actual money refund separately with the payment provider.
+        </p>
+        <div class="cash-input-group">
+          <label for="refund-txn-input">Transaction Number:</label>
+          <div class="input-field-wrapper">
+            <input type="text" id="refund-txn-input" maxlength="40" placeholder="e.g. 01-2026-00001">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+        </div>
+        <button type="button" class="modal-btn modal-btn-confirm" id="btn-load-refund-items">Load Transaction</button>
+        <div id="refund-transaction-summary" style="margin: 12px 0; font-weight: 700;"></div>
+        <div id="refund-items-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        <div class="cash-input-group">
+          <label for="refund-reason-input">Reason (required):</label>
+          <textarea id="refund-reason-input" maxlength="200" rows="3" placeholder="Enter reason for refund (5-200 characters)" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+        </div>
+        <div id="refund-message" aria-live="polite" style="margin-top: 8px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" id="btn-cancel-refund">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="btn-confirm-refund" disabled>Record Refund</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="void-sale-modal">
+    <div class="modal-card" style="width: 540px;">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-ban"></i> Void Completed Sale</span>
+        <button class="modal-close" id="void-sale-modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
+        <p style="font-size: 0.82rem; color: #64748b;">
+          Voiding cancels the entire sale and restores its items to stock. It cannot be undone and does not send money back through card, bank, or e-wallet providers.
+        </p>
+        <div class="cash-input-group">
+          <label for="void-sale-txn-input">Transaction Number:</label>
+          <div class="input-field-wrapper">
+            <input type="text" id="void-sale-txn-input" maxlength="40" placeholder="e.g. 01-2026-00001">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+        </div>
+        <button type="button" class="modal-btn modal-btn-confirm" id="btn-load-void-sale">Check Transaction</button>
+        <div id="void-sale-summary" style="margin: 12px 0; font-weight: 700;"></div>
+        <div class="cash-input-group">
+          <label for="void-sale-reason-input">Reason (required):</label>
+          <textarea id="void-sale-reason-input" maxlength="200" rows="3" placeholder="Enter reason for void (5-200 characters)" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+        </div>
+        <label style="display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; font-size: 0.82rem;">
+          <input type="checkbox" id="void-sale-understood">
+          <span>I verified this transaction and understand that voiding restores stock but does not refund the customer’s payment automatically.</span>
+        </label>
+        <div id="void-sale-message" aria-live="polite" style="margin-top: 8px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" id="btn-cancel-void-sale">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="btn-confirm-void-sale" style="background: #b91c1c;" disabled>Void Entire Sale</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELD TRANSACTIONS MODAL -->
+  <div class="modal-overlay" id="held-modal">
+    <div class="modal-card" style="width: 520px;">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-pause"></i> Held Transactions List</span>
+        <button class="modal-close" id="held-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body" style="max-height: 420px; overflow-y: auto;">
+        <div id="held-orders-container"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-cancel" id="btn-close-held-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECEIPT PREVIEW MODAL (POP-UP BEFORE PRINT) -->
+  <div class="modal-overlay" id="receipt-modal">
+    <div class="modal-card" style="width: 400px;">
+      <div class="modal-header">
+        <span><i class="fa-solid fa-receipt"></i> Transaction Complete</span>
+        <button class="modal-close" id="receipt-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body" style="background: #f1f5f9;">
+        <!-- SCREEN PREVIEW OF THERMAL RECEIPT -->
+        <div class="receipt-preview-card" id="screen-receipt-preview"></div>
+      </div>
+
+      <div class="modal-footer" style="flex-direction: column; gap: 8px;">
+        <button class="modal-btn modal-btn-confirm" id="btn-modal-print-receipt" style="background: #0284c7; width: 100%;">
+          <i class="fa-solid fa-print"></i> PRINT RECEIPT
+        </button>
+        <button class="modal-btn modal-btn-cancel" id="btn-modal-new-sale" style="background: #22c55e; color: #ffffff; width: 100%;">
+          <i class="fa-solid fa-plus"></i> NEW SALE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DYNAMIC THERMAL RECEIPT CONTAINER FOR PRINTING -->
+  <div id="thermal-receipt-area"></div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // ========================================
+    // AUTH CHECK & INITIALIZATION
+    // ========================================
+
+    // Check if user is logged in
+    const authToken = localStorage.getItem('authToken');
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    const cashierModuleDefaults = { pos: true, inventory: false, products: false, reports: true };
+    const currentModulePermissions = currentUser?.role === 'admin'
+      ? { pos: true, inventory: true, products: true, reports: true }
+      : { ...cashierModuleDefaults, ...(currentUser?.modulePermissions || {}) };
+    const canAccessModule = module => currentUser?.role === 'admin' || currentModulePermissions[module] === true;
+    const pendingSaleKey = currentUser ? `posPendingSale:${currentUser.id}` : null;
+    let pendingSale = null;
+    let pendingSaleRecoveryError = false;
+    if (pendingSaleKey) {
+      try {
+        const storedPendingSale = localStorage.getItem(pendingSaleKey);
+        if (storedPendingSale) {
+          const parsedPendingSale = JSON.parse(storedPendingSale);
+          if (parsedPendingSale.userId === currentUser.id &&
+              parsedPendingSale.branch === currentUser.branch &&
+              Array.isArray(parsedPendingSale.cart) &&
+              parsedPendingSale.payload &&
+              typeof parsedPendingSale.payload.txnNo === 'string') {
+            pendingSale = parsedPendingSale;
+          } else {
+            pendingSaleRecoveryError = true;
+            alert('May pending sale recovery data na hindi tumutugma sa kasalukuyang user o branch. Huwag itong burahin; humingi ng tulong sa admin.');
+          }
+        }
+      } catch (error) {
+        pendingSaleRecoveryError = true;
+        console.error('Unable to read pending sale recovery data:', error);
+        alert('Hindi mabasa ang pending sale recovery data. Huwag itong burahin; humingi ng tulong sa admin.');
+      }
+    }
+
+    if (!authToken || !currentUser) {
+      // Redirect to login if not authenticated
+      window.location.href = '/index.html';
+    }
+    if (currentUser) {
+      document.getElementById('cashier-name-display').innerText = `Cashier: ${currentUser.name}`;
+    }
+
+    // Logout function
+    function logout() {
+      if (confirm("Are you sure you want to logout?")) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+        window.location.href = '/index.html';
+      }
+    }
+    document.getElementById('btn-logout').addEventListener('click', logout);
+    document.getElementById('btn-change-pin').addEventListener('click', async () => {
+      const currentPin = prompt('Ilagay ang kasalukuyang password/PIN:');
+      if (currentPin === null) return;
+      const newPin = prompt('Ilagay ang bagong password/PIN (8 character minimum):');
+      if (newPin === null) return;
+      const confirmation = prompt('Ilagay muli ang bagong password/PIN:');
+      if (confirmation === null) return;
+      if (newPin.length < 8 || newPin !== confirmation) {
+        alert('Dapat magkapareho ang bagong password/PIN at hindi bababa sa 8 character.');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/change-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `******`
+          },
+          body: JSON.stringify({ currentPin, newPin })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Hindi nabago ang password/PIN.');
+        }
+        alert('Nabago ang password/PIN. Mag-sign in muli gamit ang bagong credential.');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+        window.location.href = '/index.html';
+      } catch (error) {
+        console.error('Password/PIN change failed:', error);
+        alert(error.message);
+      }
+    });
+
+    // ========================================
+    // HELPER FUNCTION: CURRENCY FORMATTING WITH COMMAS
+    // ========================================
+
+    function formatMoney(amount) {
+      return Number(amount).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    // 1. LIVE CLOCK
+    function updateClock() {
+      const now = new Date();
+      let hours = now.getHours();
+      let minutes = now.getMinutes();
+      let seconds = now.getSeconds();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      
+      hours = hours % 12 || 12;
+      minutes = minutes < 10 ? '0' + minutes : minutes;
+      seconds = seconds < 10 ? '0' + seconds : seconds;
+      
+      document.getElementById('clock-display').innerText = `${hours}:${minutes}:${seconds} ${ampm}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 2. TRANSACTION COUNTER & HISTORY MEMORY
+    let branchCode = currentUser && currentUser.branch ? currentUser.branch : "01";
+    let transactionCounter = 1;
+    let transactionNumberReady = false;
+    let completedTransactions = []; 
+
+    let shiftSales = {
+      totalAmount: 0,
+      totalCount: 0,
+      cash: 0,
+      card: 0,
+      bank: 0,
+      ewallet: 0
+    };
+
+    async function loadNextTxnNumber() {
+      if (!canAccessModule('pos')) return;
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch(`/api/transactions/next-txn-no?branchCode=${encodeURIComponent(branchCode)}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.data || !data.data.nextTxnNo) {
+          throw new Error(data.message || `Transaction number lookup failed with status ${response.status}`);
+        }
+        const numericSeq = parseInt(data.data.nextTxnNo.slice(data.data.nextTxnNo.lastIndexOf('-') + 1), 10);
+        if (!Number.isSafeInteger(numericSeq)) throw new Error('Server returned an invalid transaction number');
+        transactionCounter = numericSeq;
+        transactionNumberReady = true;
+      } catch (error) {
+        console.error('Unable to fetch next transaction number:', error);
+        alert('Hindi makuha ang susunod na transaction number. Hindi muna maaaring magbenta hanggang maibalik ang koneksyon.');
+      } finally {
+        updateTxnDisplay();
+      }
+    }
+
+    function updateTxnDisplay() {
+      const currentYear = new Date().getFullYear();
+      const formattedSeq = String(transactionCounter).padStart(5, '0');
+      document.getElementById('txn-number').innerText = `${branchCode}-${currentYear}-${formattedSeq}`;
+    }
+    loadNextTxnNumber();
+
+    // 3. CART & PRODUCTS STATE
+    let cart = pendingSale ? pendingSale.cart : [];
+    let selectedCartIndex = null;
+    let currentTotal = 0.00;
+    let appliedDiscount = pendingSale ? Number(pendingSale.discountAmount) || 0 : 0.00;
+    let appliedDiscountReason = pendingSale ? String(pendingSale.discountReason || '') : '';
+    let appliedDiscountType = pendingSale ? String(pendingSale.discountType || '') : '';
+    let heldOrders = [];
+    let isProductDashboardActive = false;
+    let productDashboardSearch = '';
+    let productDashboardCategory = 'All';
+
+    const priceOverrideButton = document.getElementById('btn-price-override');
+    priceOverrideButton.disabled = true;
+    priceOverrideButton.title = 'Price overrides are disabled until manager approval and audit logging are available.';
+
+    // Products will be fetched from API
+    let sampleProducts = [];
+
+    const customerDatabase = [
+      { name: "Juan Dela Cruz", tag: "VIP", tagClass: "vip" },
+      { name: "Maria Clara", tag: "Regular", tagClass: "regular" },
+      { name: "Jose Rizal", tag: "Corporate", tagClass: "corporate" },
+      { name: "Andres Bonifacio", tag: "Member", tagClass: "member" },
+      { name: "Emilio Aguinaldo", tag: "Regular", tagClass: "regular" }
+    ];
+
+    const scanInput = document.getElementById('scan-input');
+    const searchInput = document.getElementById('search-input');
+    const cartList = document.getElementById('cart-list');
+    const totalAmountDisplay = document.getElementById('total-amount');
+    const cartVatable = document.getElementById('cart-vatable');
+    const cartVat = document.getElementById('cart-vat');
+    const accountInput = document.getElementById('account-input');
+    const itemTableHeader = document.getElementById('item-table-header');
+    const productDashboardButton = document.getElementById('btn-product-dashboard');
+    if (pendingSale) {
+      accountInput.value = pendingSale.customerName || '';
+      alert('May pending sale na kailangang i-confirm. Naibalik ang cart. I-check muna ang transaction history bago mag-retry.');
+    }
+
+    // ========================================
+    // FETCH PRODUCTS FROM API
+    // ========================================
+
+    async function loadProducts() {
+      if (!['pos', 'inventory', 'products'].some(canAccessModule)) {
+        sampleProducts = [];
+        return;
+      }
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch('/api/products', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success || !Array.isArray(data.data)) {
+          throw new Error(data.message || `Product load failed with status ${response.status}`);
+        }
+        sampleProducts = data.data;
+        console.log('Products loaded:', sampleProducts.length, 'items');
+        if (isProductDashboardActive) renderCart();
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        sampleProducts = [];
+        alert('Hindi makuha ang live inventory. Naka-disable ang product sales hanggang maibalik ang koneksyon.');
+      }
+    }
+
+    // Load products on page load
+    loadProducts();
+
+    // Auto-focus scan input
+    window.addEventListener('click', (e) => {
+      const isModalActive = document.querySelector('.modal-overlay.active');
+      if (!isModalActive && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+        scanInput.focus();
+      }
+    });
+
+    // Barcode Scanning
+    scanInput.addEventListener('keypress', async function (e) {
+      if (e.key === 'Enter') {
+        const val = this.value.trim();
+        if (val !== "") {
+          // Search in loaded products
+          let foundItem = sampleProducts.find(p => p.code === val);
+          
+          if (!foundItem) {
+            // Try to fetch from API if not in local cache
+            try {
+              const authToken = localStorage.getItem('authToken');
+              const response = await fetch(`/api/products/code/${encodeURIComponent(val)}`, {
+                headers: {
+                  'Authorization': `Bearer ${authToken}`
+                }
+              });
+              const data = await response.json();
+              if (data.success) {
+                foundItem = data.data;
+              }
+            } catch (error) {
+              console.error('Error fetching product:', error);
+            }
+          }
+
+          if (foundItem) {
+            addItemToCart(foundItem);
+          } else {
+            alert(`Product code "${val}" not found!`);
+          }
+
+          this.value = "";
+        }
+      }
+    });
+
+    // Search input
+    searchInput.addEventListener('keypress', async function (e) {
+      if (e.key === 'Enter') {
+        const val = this.value.trim().toLowerCase();
+        if (val !== "") {
+          try {
+            // Search in local cache first
+            let found = sampleProducts.find(p => p.name.toLowerCase().includes(val));
+
+            if (!found) {
+              // Search via API if not found locally
+              const authToken = localStorage.getItem('authToken');
+              const response = await fetch(`/api/products/search?q=${encodeURIComponent(val)}`, {
+                headers: {
+                  'Authorization': `Bearer ${authToken}`
+                }
+              });
+              const data = await response.json();
+              if (data.success && data.data.length > 0) {
+                found = data.data[0];
+              }
+            }
+
+            if (found) {
+              addItemToCart(found);
+              this.value = "";
+            } else {
+              alert(`Walang item na nahanap para sa: "${val}"`);
+            }
+          } catch (error) {
+            console.error('Search error:', error);
+            alert('Error searching products');
+          }
+        }
+      }
+    });
+
+    // 4. ADD ITEM TO CART WITH BARCODE COMPRESSION LOGIC
+    function addItemToCart(item) {
+      // Support both API format (with id) and old format (without id)
+      const productCode = item.code || item.id;
+      const existingIndex = cart.findIndex(e => e.type === 'item' && e.code === productCode);
+
+      if (existingIndex !== -1) {
+        cart[existingIndex].qty += 1;
+        selectedCartIndex = existingIndex;
+      } else {
+        cart.push({
+          type: 'item',
+          id: item.id || undefined,
+          code: productCode,
+          name: item.name,
+          price: item.price,
+          qty: 1,
+          category: item.category || 'General'
+        });
+        selectedCartIndex = cart.length - 1;
+      }
+
+      renderCart();
+    }
+
+    function updateCartTotals(itemsSum) {
+      currentTotal = Math.max(0, itemsSum - appliedDiscount);
+      const vatableSales = currentTotal / 1.12;
+      const vatAmount = currentTotal - vatableSales;
+      totalAmountDisplay.innerText = formatMoney(currentTotal);
+      cartVatable.innerText = formatMoney(vatableSales);
+      cartVat.innerText = formatMoney(vatAmount);
+    }
+
+    function getCartItemsTotal() {
+      return cart.reduce((sum, entry) => entry.type === 'item'
+        ? sum + (Number(entry.price) * Number(entry.qty))
+        : sum, 0);
+    }
+
+    function setProductDashboardMode(active) {
+      isProductDashboardActive = active;
+      productDashboardButton.setAttribute('aria-pressed', String(active));
+      productDashboardButton.innerHTML = active
+        ? '<i class="fa-solid fa-cart-shopping"></i><span>VIEW CART</span>'
+        : '<i class="fa-solid fa-table-cells-large"></i><span>PRODUCTS</span>';
+      itemTableHeader.hidden = active;
+      renderCart();
+      if (!active) scanInput.focus();
+    }
+
+    function renderProductDashboard() {
+      const categories = ['All', ...new Set(sampleProducts.map(product => String(product.category || 'General').trim() || 'General'))];
+      if (!categories.includes(productDashboardCategory)) productDashboardCategory = 'All';
+      const normalizedQuery = productDashboardSearch.trim().toLowerCase();
+      const filteredProducts = sampleProducts.filter(product => {
+        const category = String(product.category || 'General').trim() || 'General';
+        const searchable = [product.name, product.code, product.sku, category].filter(Boolean).join(' ').toLowerCase();
+        return (productDashboardCategory === 'All' || category === productDashboardCategory) && (!normalizedQuery || searchable.includes(normalizedQuery));
+      });
+
+      const dashboard = document.createElement('section');
+      dashboard.className = 'product-dashboard';
+      const header = document.createElement('div');
+      header.className = 'product-dashboard-header';
+      const heading = document.createElement('div');
+      heading.className = 'product-dashboard-heading';
+      heading.innerHTML = '<i class="fa-solid fa-hand-pointer"></i> Touch Products<small>Tap an item to add it to the current sale.</small>';
+      const cartButton = document.createElement('button');
+      cartButton.type = 'button';
+      cartButton.className = 'product-dashboard-cart-button';
+      cartButton.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> VIEW CART';
+      cartButton.addEventListener('click', () => setProductDashboardMode(false));
+      header.append(heading, cartButton);
+
+      const search = document.createElement('input');
+      search.type = 'search';
+      search.className = 'product-dashboard-search';
+      search.placeholder = 'Search product, barcode, or SKU…';
+      search.value = productDashboardSearch;
+      search.setAttribute('aria-label', 'Search touch products');
+      search.addEventListener('input', event => { productDashboardSearch = event.target.value; renderCart(); });
+
+      const categoryList = document.createElement('div');
+      categoryList.className = 'product-category-list';
+      categories.forEach(category => {
+        const categoryButton = document.createElement('button');
+        categoryButton.type = 'button';
+        categoryButton.className = `product-category-button${category === productDashboardCategory ? ' active' : ''}`;
+        categoryButton.textContent = category;
+        categoryButton.addEventListener('click', () => { productDashboardCategory = category; renderCart(); });
+        categoryList.appendChild(categoryButton);
+      });
+
+      const grid = document.createElement('div');
+      grid.className = 'product-card-grid';
+      filteredProducts.forEach(product => {
+        const stock = Number(product.stock) || 0;
+        const isOutOfStock = stock <= 0;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'product-touch-card';
+        card.disabled = isOutOfStock;
+        card.setAttribute('aria-label', isOutOfStock ? `${product.name}, out of stock` : `Add ${product.name} to cart`);
+        const name = document.createElement('span');
+        name.className = 'product-touch-name';
+        name.textContent = product.name;
+        const price = document.createElement('span');
+        price.className = 'product-touch-price';
+        price.textContent = `₱${formatMoney(product.price)}`;
+        const stockLabel = document.createElement('span');
+        stockLabel.className = `product-touch-stock${isOutOfStock ? ' out-of-stock' : ''}`;
+        stockLabel.textContent = isOutOfStock ? 'OUT OF STOCK' : `${stock} ${product.uom || 'pcs'} available`;
+        card.append(name, price, stockLabel);
+        if (!isOutOfStock) card.addEventListener('click', () => addItemToCart(product));
+        grid.appendChild(card);
+      });
+      if (filteredProducts.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'product-dashboard-empty';
+        empty.textContent = 'Walang produktong tumutugma sa search o category.';
+        grid.appendChild(empty);
+      }
+      dashboard.append(header, search, categoryList, grid);
+      cartList.appendChild(dashboard);
+    }
+
+    productDashboardButton.addEventListener('click', () => setProductDashboardMode(!isProductDashboardActive));
+
+    // 5. RENDER CART LIST & COMPUTE TOTALS
+    function renderCart() {
+      cartList.innerHTML = "";
+      const itemsSum = getCartItemsTotal();
+      updateCartTotals(itemsSum);
+      if (isProductDashboardActive) {
+        renderProductDashboard();
+        return;
+      }
+
+      cart.forEach((entry, index) => {
+        if (entry.type === 'item') {
+          const itemLineTotal = entry.price * entry.qty;
+          const row = document.createElement('div');
+          
+          const isSelected = selectedCartIndex === index;
+          row.className = `cart-row item-row ${isSelected ? 'selected' : ''}`;
+          
+          row.innerHTML = `
+            <span class="col-item">${entry.name}</span>
+            <span class="col-qty">${entry.qty}</span>
+            <span class="col-price">₱${formatMoney(itemLineTotal)}</span>
+          `;
+
+          row.addEventListener('click', () => {
+            if (selectedCartIndex === index) {
+              selectedCartIndex = null;
+            } else {
+              selectedCartIndex = index;
+            }
+            renderCart();
+          });
+
+          cartList.appendChild(row);
+        } else if (entry.type === 'subtotal') {
+          const row = document.createElement('div');
+          row.className = 'cart-row subtotal-divider';
+          row.innerHTML = `
+            <span><i class="fa-solid fa-calculator"></i> --- SUBTOTAL ---</span>
+            <span>₱${formatMoney(entry.amount)}</span>
+          `;
+          cartList.appendChild(row);
+        }
+      });
+
+      if (appliedDiscount > 0) {
+        const discRow = document.createElement('div');
+        discRow.className = 'cart-row discount-row';
+        discRow.innerHTML = `
+          <span><i class="fa-solid fa-percent"></i> DISCOUNT APPLIED</span>
+          <span>- ₱${formatMoney(appliedDiscount)}</span>
+        `;
+        cartList.appendChild(discRow);
+      }
+
+      cartList.scrollTop = cartList.scrollHeight;
+    }
+    renderCart();
+
+    let brandingSettings = {
+      appName: 'POS Store',
+      logoDataUrl: null,
+      address: '',
+      tin: '',
+      phone: '',
+      receiptFooter: 'Thank you for your purchase!'
+    };
+
+    function escapeHTML(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[character]);
+    }
+
+    async function loadBrandingSettings() {
+      const response = await fetch('/api/settings/branding', {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success || !result.data) {
+        throw new Error(result.message || `Branding settings failed with status ${response.status}`);
+      }
+      brandingSettings = { ...brandingSettings, ...result.data };
+      document.title = brandingSettings.appName || 'POS Store';
+    }
+
+    loadBrandingSettings().catch(error => {
+      console.error('Unable to load receipt branding:', error);
+    });
+
+    // 6. THERMAL RECEIPT HTML BUILDER (UPDATED WITH CARD DETAILS)
+    function buildReceiptHTML(txn, isReprint = false) {
+      let itemsSum = 0;
+      let itemsHTML = "";
+
+      txn.items.forEach(entry => {
+        const lineTotal = entry.price * entry.qty;
+        itemsSum += lineTotal;
+        itemsHTML += `
+          <div class="t-item-name">${escapeHTML(entry.name)}</div>
+          <div class="t-item-details">
+            <span>${entry.qty} x ₱${formatMoney(entry.price)}</span>
+            <span>₱${formatMoney(lineTotal)}</span>
+          </div>
+        `;
+      });
+
+      const vatableSales = txn.total / 1.12;
+      const vatAmount = txn.total - vatableSales;
+      const logo = brandingSettings.logoDataUrl
+        ? `<img src="${escapeHTML(brandingSettings.logoDataUrl)}" alt="" style="max-width: 90px; max-height: 60px; object-fit: contain;">`
+        : '';
+
+      return `
+        <div class="t-header">
+          ${logo}
+          <div class="t-title">${escapeHTML(brandingSettings.appName)}</div>
+          ${brandingSettings.address ? `<div class="t-sub">${escapeHTML(brandingSettings.address)}</div>` : ''}
+          ${brandingSettings.tin ? `<div class="t-sub">TIN: ${escapeHTML(brandingSettings.tin)}</div>` : ''}
+          ${brandingSettings.phone ? `<div class="t-sub">TEL: ${escapeHTML(brandingSettings.phone)}</div>` : ''}
+          ${isReprint ? '<div style="font-weight: bold; border: 1px dashed #000; margin-top: 4px; padding: 2px;">*** REPRINT RECEIPT ***</div>' : ''}
+        </div>
+        <div class="t-divider"></div>
+        <div class="t-row"><span>Date/Time:</span><span>${escapeHTML(txn.dateStr)} ${escapeHTML(txn.timeStr)}</span></div>
+        <div class="t-row"><span>Txn No:</span><span>${escapeHTML(txn.txnNo)}</span></div>
+        <div class="t-row"><span>Cashier:</span><span>${escapeHTML(txn.cashier)}</span></div>
+        <div class="t-row"><span>Customer:</span><span>${escapeHTML(txn.customer)}</span></div>
+        <div class="t-divider"></div>
+        ${itemsHTML}
+        <div class="t-divider"></div>
+        <div class="t-row"><span>Subtotal:</span><span>₱${formatMoney(itemsSum)}</span></div>
+        ${txn.appliedDiscount > 0 ? `<div class="t-row"><span>Discount:</span><span>-₱${formatMoney(txn.appliedDiscount)}</span></div>` : ''}
+        <div class="t-row"><span>Vatable Sales:</span><span>₱${formatMoney(vatableSales)}</span></div>
+        <div class="t-row"><span>VAT (12%):</span><span>₱${formatMoney(vatAmount)}</span></div>
+        <div class="t-divider"></div>
+        <div class="t-row t-row-bold" style="font-size: 14px;"><span>TOTAL DUE:</span><span>₱${formatMoney(txn.total)}</span></div>
+        <div class="t-divider"></div>
+        <div class="t-row"><span>Payment Method:</span><span>${escapeHTML(txn.paymentMethod)}</span></div>
+        ${txn.paymentMethod.startsWith('CARD') ? `
+          ${txn.paymentProvider ? `<div class="t-row"><span>Bank / Terminal:</span><span>${escapeHTML(txn.paymentProvider)}</span></div>` : ''}
+          ${txn.cardDigits ? `<div class="t-row"><span>Card Number:</span><span>•••• •••• •••• ${escapeHTML(txn.cardDigits)}</span></div>` : ''}
+          ${txn.batchNo ? `<div class="t-row"><span>Batch No:</span><span>${escapeHTML(txn.batchNo)}</span></div>` : ''}
+        ` : ''}
+        ${txn.refNo ? `<div class="t-row"><span>Reference No:</span><span>${escapeHTML(txn.refNo)}</span></div>` : ''}
+        ${txn.paymentMethod === 'CASH' ? `
+          <div class="t-row"><span>Cash Tendered:</span><span>₱${formatMoney(txn.tenderedAmt)}</span></div>
+          <div class="t-row t-row-bold"><span>Change (Sukli):</span><span>₱${formatMoney(txn.changeAmt)}</span></div>
+        ` : ''}
+        <div class="t-divider"></div>
+        <div class="t-footer">
+          <div>${escapeHTML(brandingSettings.receiptFooter)}</div>
+        </div>
+      `;
+    }
+
+    // SHOW RECEIPT MODAL (POP-UP PREVIEW)
+    const receiptModal = document.getElementById('receipt-modal');
+    const screenReceiptPreview = document.getElementById('screen-receipt-preview');
+    const thermalReceiptArea = document.getElementById('thermal-receipt-area');
+
+    function showReceiptPreviewModal(txn, isReprint = false) {
+      const htmlContent = buildReceiptHTML(txn, isReprint);
+
+      screenReceiptPreview.innerHTML = htmlContent;
+      thermalReceiptArea.innerHTML = htmlContent;
+
+      receiptModal.classList.add('active');
+    }
+
+    function closeReceiptModal() {
+      receiptModal.classList.remove('active');
+      scanInput.focus();
+    }
+
+    document.getElementById('receipt-modal-close-btn').addEventListener('click', closeReceiptModal);
+    document.getElementById('btn-modal-new-sale').addEventListener('click', closeReceiptModal);
+
+    document.getElementById('btn-modal-print-receipt').addEventListener('click', () => {
+      window.print();
+    });
+
+    // REPRINT RECEIPT MODAL LOGIC
+    const reprintModal = document.getElementById('reprint-modal');
+    const reprintSearchInput = document.getElementById('reprint-search-input');
+    const recentTxnHistoryContainer = document.getElementById('recent-txn-history-container');
+
+    document.getElementById('btn-print-receipt').addEventListener('click', () => {
+      if (completedTransactions.length === 0) {
+        alert("Walang natatagpuan na natatapos na transaction sa shift na ito para i-reprint!");
+        return;
+      }
+      reprintSearchInput.value = "";
+      renderRecentTxnList();
+      reprintModal.classList.add('active');
+      setTimeout(() => reprintSearchInput.focus(), 100);
+    });
+
+    document.getElementById('reprint-modal-close-btn').addEventListener('click', () => reprintModal.classList.remove('active'));
+    document.getElementById('btn-cancel-reprint').addEventListener('click', () => reprintModal.classList.remove('active'));
+
+    function renderRecentTxnList() {
+      recentTxnHistoryContainer.innerHTML = "";
+      const recentList = [...completedTransactions].reverse();
+
+      recentList.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'recent-txn-item';
+        item.innerHTML = `
+          <div>
+            <div style="font-weight: 800; color: #0284c7; font-size: 0.88rem;">${t.txnNo}</div>
+            <div style="font-size: 0.75rem; color: #64748b;">${t.timeStr} | ${t.customer}</div>
+          </div>
+          <div style="font-weight: 800; color: #1e293b;">₱${formatMoney(t.total)}</div>
+        `;
+        item.addEventListener('click', () => {
+          reprintModal.classList.remove('active');
+          showReceiptPreviewModal(t, true);
+        });
+        recentTxnHistoryContainer.appendChild(item);
+      });
+    }
+
+    document.getElementById('btn-confirm-reprint-search').addEventListener('click', () => {
+      const q = reprintSearchInput.value.trim().toLowerCase();
+      if (!q) {
+        alert("Mag-type ng Transaction Number para i-search!");
+        return;
+      }
+      const found = completedTransactions.find(t => t.txnNo.toLowerCase() === q);
+      if (found) {
+        reprintModal.classList.remove('active');
+        showReceiptPreviewModal(found, true);
+      } else {
+        alert(`❌ Hindi nahanap ang Receipt Number na "${reprintSearchInput.value}".`);
+      }
+    });
+
+    const refundModal = document.getElementById('refund-modal');
+    const refundTxnInput = document.getElementById('refund-txn-input');
+    const refundItemsList = document.getElementById('refund-items-list');
+    const refundSummary = document.getElementById('refund-transaction-summary');
+    const refundReasonInput = document.getElementById('refund-reason-input');
+    const refundMessage = document.getElementById('refund-message');
+    const confirmRefundButton = document.getElementById('btn-confirm-refund');
+    let refundPreview = null;
+    let pendingRefundRequest = null;
+    try {
+      const savedRefund = localStorage.getItem(`pos_pending_refund_${currentUser.id}`);
+      if (savedRefund) pendingRefundRequest = JSON.parse(savedRefund);
+    } catch (error) {
+      console.error('Unable to load pending refund recovery data:', error);
+    }
+
+    document.getElementById('btn-refund-sale').addEventListener('click', () => {
+      refundTxnInput.value = '';
+      refundItemsList.replaceChildren();
+      refundSummary.textContent = '';
+      refundReasonInput.value = '';
+      refundMessage.textContent = '';
+      confirmRefundButton.disabled = true;
+      refundPreview = null;
+      refundModal.classList.add('active');
+      setTimeout(() => refundTxnInput.focus(), 100);
+    });
+    document.getElementById('refund-modal-close-btn').addEventListener('click', () => refundModal.classList.remove('active'));
+    document.getElementById('btn-cancel-refund').addEventListener('click', () => refundModal.classList.remove('active'));
+
+    document.getElementById('btn-load-refund-items').addEventListener('click', async () => {
+      const txnNo = refundTxnInput.value.trim();
+      if (!txnNo) {
+        refundMessage.textContent = 'Ilagay muna ang transaction number.';
+        return;
+      }
+      refundMessage.textContent = 'Loading transaction...';
+      refundItemsList.replaceChildren();
+      confirmRefundButton.disabled = true;
+      try {
+        const response = await fetch(`/api/transactions/refund-preview/${encodeURIComponent(txnNo)}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.data) {
+          throw new Error(data.message || `Transaction lookup failed with status ${response.status}`);
+        }
+        refundPreview = data.data;
+        refundSummary.textContent = `${refundPreview.txnNo} | Remaining refundable: ₱${formatMoney(refundPreview.refundableAmount)}`;
+        refundPreview.items.forEach((item) => {
+          const row = document.createElement('label');
+          row.style.cssText = 'display: grid; grid-template-columns: 1fr 100px; gap: 8px; align-items: center; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;';
+          const description = document.createElement('span');
+          description.textContent = `${item.productName} — sold ${item.quantity}, already refunded ${item.refundedQuantity}, available ${item.refundableQuantity}`;
+          const quantityInput = document.createElement('input');
+          quantityInput.type = 'number';
+          quantityInput.min = '0';
+          quantityInput.max = String(item.refundableQuantity);
+          quantityInput.step = '1';
+          quantityInput.value = '0';
+          quantityInput.dataset.transactionItemId = String(item.id);
+          quantityInput.dataset.maxQuantity = String(item.refundableQuantity);
+          quantityInput.setAttribute('aria-label', `Refund quantity for ${item.productName}`);
+          quantityInput.addEventListener('input', updateRefundButton);
+          row.append(description, quantityInput);
+          refundItemsList.appendChild(row);
+        });
+        refundMessage.textContent = refundPreview.voidedAt
+          ? 'Na-void ang transaction na ito at hindi na maaaring i-refund.'
+          : refundPreview.refundableAmount > 0
+            ? 'Piliin ang quantity na ibabalik at ilagay ang dahilan.'
+            : 'Wala nang natitirang refundable amount para sa transaction na ito.';
+        updateRefundButton();
+      } catch (error) {
+        refundPreview = null;
+        refundMessage.textContent = `Hindi ma-load ang transaction: ${error.message}`;
+      }
+    });
+
+    function updateRefundButton() {
+      const selected = [...refundItemsList.querySelectorAll('input[data-transaction-item-id]')]
+        .some(input => Number(input.value) > 0 && Number(input.value) <= Number(input.dataset.maxQuantity));
+      confirmRefundButton.disabled = !refundPreview || refundPreview.voidedAt ||
+        !selected || refundPreview.refundableAmount <= 0;
+    }
+
+    confirmRefundButton.addEventListener('click', async () => {
+      if (!refundPreview) return;
+      const reason = refundReasonInput.value.trim();
+      if (reason.length < 5 || reason.length > 200) {
+        refundMessage.textContent = 'Maglagay ng dahilan na 5-200 characters.';
+        refundReasonInput.focus();
+        return;
+      }
+      const items = [...refundItemsList.querySelectorAll('input[data-transaction-item-id]')]
+        .map(input => ({
+          transactionItemId: Number(input.dataset.transactionItemId),
+          quantity: Number(input.value)
+        }))
+        .filter(item => item.quantity > 0);
+      if (!items.length || items.some(item => !Number.isSafeInteger(item.quantity))) {
+        refundMessage.textContent = 'Pumili ng valid na quantity para i-refund.';
+        return;
+      }
+
+      const requestPayload = {
+        transactionId: refundPreview.id,
+        transactionNumber: refundPreview.txnNo,
+        reason,
+        items
+      };
+      if (!pendingRefundRequest ||
+          JSON.stringify({
+            transactionId: pendingRefundRequest.transactionId,
+            transactionNumber: pendingRefundRequest.transactionNumber,
+            reason: pendingRefundRequest.reason,
+            items: pendingRefundRequest.items
+          }) !== JSON.stringify(requestPayload)) {
+        pendingRefundRequest = { ...requestPayload, requestId: crypto.randomUUID() };
+      }
+      try {
+        localStorage.setItem(`pos_pending_refund_${currentUser.id}`, JSON.stringify(pendingRefundRequest));
+      } catch (error) {
+        refundMessage.textContent = `Hindi ligtas ma-save ang refund retry data: ${error.message}`;
+        return;
+      }
+
+      confirmRefundButton.disabled = true;
+      refundMessage.textContent = 'Nire-record ang refund...';
+      try {
+        const response = await fetch(`/api/transactions/${refundPreview.id}/refunds`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify(pendingRefundRequest)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.data) {
+          if ([400, 403, 404, 409].includes(response.status)) {
+            localStorage.removeItem(`pos_pending_refund_${currentUser.id}`);
+            pendingRefundRequest = null;
+          }
+          throw new Error(data.message || `Refund request failed with status ${response.status}`);
+        }
+        localStorage.removeItem(`pos_pending_refund_${currentUser.id}`);
+        pendingRefundRequest = null;
+        refundMessage.textContent = `Na-record ang refund na ₱${formatMoney(data.data.refundAmount)}. I-process nang hiwalay ang aktuwal na bayad sa customer.`;
+        refundReasonInput.value = '';
+        await document.getElementById('btn-load-refund-items').click();
+      } catch (error) {
+        refundMessage.textContent = `Hindi makumpirma ang refund: ${error.message}. I-retry ang parehong refund para ligtas na masuri kung na-save na ito.`;
+        updateRefundButton();
+      }
+    });
+
+    const voidSaleModal = document.getElementById('void-sale-modal');
+    const voidSaleTxnInput = document.getElementById('void-sale-txn-input');
+    const voidSaleReasonInput = document.getElementById('void-sale-reason-input');
+    const voidSaleUnderstood = document.getElementById('void-sale-understood');
+    const voidSaleSummary = document.getElementById('void-sale-summary');
+    const voidSaleMessage = document.getElementById('void-sale-message');
+    const confirmVoidSaleButton = document.getElementById('btn-confirm-void-sale');
+    let voidSalePreview = null;
+    let pendingVoidRequest = null;
+    try {
+      const savedVoid = localStorage.getItem(`pos_pending_void_${currentUser.id}`);
+      if (savedVoid) pendingVoidRequest = JSON.parse(savedVoid);
+    } catch (error) {
+      console.error('Unable to load pending void recovery data:', error);
+    }
+
+    document.getElementById('btn-void-sale').addEventListener('click', () => {
+      voidSaleTxnInput.value = '';
+      voidSaleReasonInput.value = '';
+      voidSaleUnderstood.checked = false;
+      voidSaleSummary.textContent = '';
+      voidSaleMessage.textContent = '';
+      confirmVoidSaleButton.disabled = true;
+      voidSalePreview = null;
+      voidSaleModal.classList.add('active');
+      setTimeout(() => voidSaleTxnInput.focus(), 100);
+    });
+    document.getElementById('void-sale-modal-close-btn').addEventListener('click', () => voidSaleModal.classList.remove('active'));
+    document.getElementById('btn-cancel-void-sale').addEventListener('click', () => voidSaleModal.classList.remove('active'));
+    voidSaleReasonInput.addEventListener('input', updateVoidSaleButton);
+    voidSaleUnderstood.addEventListener('change', updateVoidSaleButton);
+
+    document.getElementById('btn-load-void-sale').addEventListener('click', async () => {
+      const txnNo = voidSaleTxnInput.value.trim();
+      if (!txnNo) {
+        voidSaleMessage.textContent = 'Ilagay muna ang transaction number.';
+        return;
+      }
+      voidSaleMessage.textContent = 'Sinusuri ang transaction...';
+      voidSaleSummary.textContent = '';
+      confirmVoidSaleButton.disabled = true;
+      voidSalePreview = null;
+      try {
+        const response = await fetch(`/api/transactions/void-preview/${encodeURIComponent(txnNo)}`, {
+          headers: { 'Authorization': `******'authToken')}` }
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.data) {
+          throw new Error(data.message || `Transaction lookup failed with status ${response.status}`);
+        }
+        voidSalePreview = data.data;
+        voidSaleSummary.textContent = `${voidSalePreview.txnNo} | ₱${formatMoney(voidSalePreview.totalAmount)} | ${voidSalePreview.paymentMethod}`;
+        if (!voidSalePreview.canVoid) {
+          voidSaleMessage.textContent = voidSalePreview.voidedAt
+            ? 'Na-void na ang transaction na ito.'
+            : 'Hindi puwedeng i-void ang sale na ito dahil may recorded refund na. Gamitin ang refund flow para sa eligible items.';
+        } else {
+          voidSaleMessage.textContent = 'Kumpirmahin ang transaction, ilagay ang dahilan, at basahin ang babala bago mag-void.';
+        }
+        updateVoidSaleButton();
+      } catch (error) {
+        voidSalePreview = null;
+        voidSaleMessage.textContent = `Hindi masuri ang transaction: ${error.message}`;
+      }
+    });
+
+    function updateVoidSaleButton() {
+      const reasonLength = voidSaleReasonInput.value.trim().length;
+      confirmVoidSaleButton.disabled = !voidSalePreview || !voidSalePreview.canVoid ||
+        !voidSaleUnderstood.checked || reasonLength < 5 || reasonLength > 200;
+    }
+
+    confirmVoidSaleButton.addEventListener('click', async () => {
+      if (!voidSalePreview || !voidSalePreview.canVoid || !voidSaleUnderstood.checked) return;
+      const reason = voidSaleReasonInput.value.trim();
+      if (reason.length < 5 || reason.length > 200) {
+        voidSaleMessage.textContent = 'Maglagay ng dahilan na 5-200 characters.';
+        voidSaleReasonInput.focus();
+        return;
+      }
+      if (!window.confirm(`I-VOID ang buong sale ${voidSalePreview.txnNo} na ₱${formatMoney(voidSalePreview.totalAmount)}? Maibabalik ang stock, pero hindi awtomatikong maibabalik ang bayad.`)) {
+        return;
+      }
+
+      const requestPayload = {
+        transactionId: voidSalePreview.id,
+        transactionNumber: voidSalePreview.txnNo,
+        reason
+      };
+      if (!pendingVoidRequest ||
+          JSON.stringify({
+            transactionId: pendingVoidRequest.transactionId,
+            transactionNumber: pendingVoidRequest.transactionNumber,
+            reason: pendingVoidRequest.reason
+          }) !== JSON.stringify(requestPayload)) {
+        pendingVoidRequest = { ...requestPayload, requestId: crypto.randomUUID() };
+      }
+      try {
+        localStorage.setItem(`pos_pending_void_${currentUser.id}`, JSON.stringify(pendingVoidRequest));
+      } catch (error) {
+        voidSaleMessage.textContent = `Hindi ligtas ma-save ang void retry data: ${error.message}`;
+        return;
+      }
+
+      confirmVoidSaleButton.disabled = true;
+      voidSaleMessage.textContent = 'Nire-record ang void...';
+      try {
+        const response = await fetch(`/api/transactions/${voidSalePreview.id}/void`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `******'authToken')}`
+          },
+          body: JSON.stringify(pendingVoidRequest)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success || !data.data) {
+          if ([400, 403, 404, 409].includes(response.status)) {
+            localStorage.removeItem(`pos_pending_void_${currentUser.id}`);
+            pendingVoidRequest = null;
+          }
+          throw new Error(data.message || `Void request failed with status ${response.status}`);
+        }
+        localStorage.removeItem(`pos_pending_void_${currentUser.id}`);
+        pendingVoidRequest = null;
+        voidSalePreview.canVoid = false;
+        voidSalePreview.voidedAt = true;
+        voidSaleMessage.textContent = `Na-void ang ${data.data.transactionNumber} at naibalik ang mga item sa stock. Ayusin nang hiwalay ang aktuwal na bayad sa customer.`;
+      } catch (error) {
+        voidSaleMessage.textContent = `Hindi makumpirma ang void: ${error.message}. I-check muli ang transaction bago subukang ulit.`;
+        updateVoidSaleButton();
+      }
+    });
+
+    // ADMIN SETTINGS MODULES
+    const adminSettingsModal = document.getElementById('admin-settings-modal');
+    const adminSettingsMessage = document.getElementById('admin-settings-message');
+    const settingsTabs = [...document.querySelectorAll('[data-settings-tab]')];
+    let inventoryProducts = [];
+    let productCatalog = [];
+    let managedUsers = [];
+    let selectedInventoryProduct = null;
+    let settingsLogoDataUrl = null;
+    let showInventoryLowStockOnly = false;
+
+    async function settingsRequest(url, options = {}) {
+      const headers = {
+        'Authorization': `Bearer ${authToken}`,
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.headers || {})
+      };
+      const response = await fetch(url, { ...options, headers });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Request failed with status ${response.status}`);
+      }
+      return result;
+    }
+
+    function setSettingsMessage(message, isError = false) {
+      adminSettingsMessage.textContent = message;
+      adminSettingsMessage.style.color = isError ? '#b91c1c' : '#334155';
+    }
+
+    function isInventoryProductLowStock(product) {
+      const reorderLevel = Number(product.reorderLevel) || 0;
+      return reorderLevel > 0 ? Number(product.stock) <= reorderLevel : Number(product.stock) === 0;
+    }
+
+    function applyModuleAccess() {
+      const isAdmin = currentUser?.role === 'admin';
+      const settingsAvailable = isAdmin || canAccessModule('inventory') || canAccessModule('products');
+      document.getElementById('tool-settings').hidden = !settingsAvailable;
+
+      const posOnlyButtons = [
+        'btn-cash-payment', 'btn-card-payment', 'btn-ewallet-payment', 'btn-bank-payment',
+        'btn-discount', 'btn-hold-order', 'btn-void', 'btn-split-bill',
+        'btn-print-receipt', 'btn-refund-sale', 'btn-void-sale', 'btn-price-override',
+        'btn-customer-lookup', 'btn-open-drawer', 'btn-subtotal', 'btn-checkout-bottom'
+      ];
+      posOnlyButtons.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.hidden = !canAccessModule('pos');
+      });
+      document.getElementById('btn-sales-report').hidden = !canAccessModule('reports');
+      document.getElementById('scan-input').disabled = !canAccessModule('pos');
+      document.getElementById('search-input').disabled = !canAccessModule('pos');
+    }
+
+    function activateSettingsTab(module) {
+      const tab = settingsTabs.find(item => item.dataset.settingsTab === module && !item.hidden);
+      if (!tab) return;
+      settingsTabs.forEach(item => item.classList.toggle('active', item === tab));
+      document.querySelectorAll('[data-settings-panel]').forEach(panel => {
+        panel.classList.toggle('active', panel.dataset.settingsPanel === module);
+      });
+      setSettingsMessage('');
+      if (module === 'inventory') loadInventoryProducts();
+      if (module === 'products') loadProductCatalog();
+      if (module === 'users') loadManagedUsers();
+      if (module === 'branding') loadBrandingForm();
+    }
+
+    function openAdminSettings() {
+      const isAdmin = currentUser?.role === 'admin';
+      const access = {
+        inventory: isAdmin || canAccessModule('inventory'),
+        products: isAdmin || canAccessModule('products'),
+        users: isAdmin,
+        branding: isAdmin
+      };
+      settingsTabs.forEach(tab => { tab.hidden = !access[tab.dataset.settingsTab]; });
+      const firstTab = settingsTabs.find(tab => !tab.hidden);
+      if (!firstTab) return;
+      document.body.classList.add('admin-settings-open');
+      adminSettingsModal.classList.add('active');
+      activateSettingsTab(firstTab.dataset.settingsTab);
+    }
+
+    function closeAdminSettings() {
+      adminSettingsModal.classList.remove('active');
+      document.body.classList.remove('admin-settings-open');
+    }
+
+    document.getElementById('tool-settings').addEventListener('click', openAdminSettings);
+    document.getElementById('admin-settings-close').addEventListener('click', closeAdminSettings);
+    document.getElementById('admin-settings-close-footer').addEventListener('click', closeAdminSettings);
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && adminSettingsModal.classList.contains('active')) {
+        closeAdminSettings();
+      }
+    });
+    settingsTabs.forEach(tab => tab.addEventListener('click', () => activateSettingsTab(tab.dataset.settingsTab)));
+    applyModuleAccess();
+
+    async function loadInventoryProducts() {
+      const tbody = document.getElementById('inventory-products-body');
+      tbody.replaceChildren();
+      try {
+        const result = await settingsRequest('/api/products');
+        inventoryProducts = result.data;
+        renderInventoryProducts();
+        await loadInventoryMovements();
+      } catch (error) {
+        setSettingsMessage(`Hindi ma-load ang inventory: ${error.message}`, true);
+      }
+    }
+
+    function renderInventoryProducts() {
+      const query = document.getElementById('inventory-search').value.trim().toLowerCase();
+      const tbody = document.getElementById('inventory-products-body');
+      tbody.replaceChildren();
+      const lowStockProducts = inventoryProducts.filter(isInventoryProductLowStock);
+      const summary = document.getElementById('inventory-stock-summary');
+      const lowStockCount = document.getElementById('inventory-low-stock-count');
+      summary.classList.toggle('has-no-alerts', lowStockProducts.length === 0);
+      lowStockCount.textContent = lowStockProducts.length
+        ? `${lowStockProducts.length} product${lowStockProducts.length === 1 ? '' : 's'} at or below reorder level`
+        : 'No products currently at or below reorder level';
+      document.getElementById('inventory-low-stock-filter').textContent =
+        showInventoryLowStockOnly ? 'Show all products' : 'Show low stock';
+      document.getElementById('inventory-low-stock-filter').setAttribute('aria-pressed', String(showInventoryLowStockOnly));
+      const products = inventoryProducts.filter(product =>
+        (!showInventoryLowStockOnly || isInventoryProductLowStock(product)) &&
+        [product.code, product.sku, product.name].some(value => String(value || '').toLowerCase().includes(query))
+      );
+      products.forEach(product => {
+        const row = document.createElement('tr');
+        const isLowStock = isInventoryProductLowStock(product);
+        if (isLowStock) row.classList.add('low-stock-row');
+        [
+          product.code,
+          product.sku || '—',
+          product.name,
+          product.uom || 'pcs',
+          `₱${formatMoney(product.price)}`,
+          product.reorderLevel,
+          product.stock
+        ].forEach(value => {
+          const cell = document.createElement('td');
+          cell.textContent = String(value);
+          row.appendChild(cell);
+        });
+        if (isLowStock) {
+          const itemNameCell = row.children[2];
+          const badge = document.createElement('span');
+          badge.className = 'settings-stock-badge';
+          badge.textContent = 'LOW';
+          itemNameCell.appendChild(badge);
+        }
+        const actions = document.createElement('td');
+        const adjust = document.createElement('button');
+        adjust.type = 'button';
+        adjust.className = 'settings-small-btn';
+        adjust.textContent = 'Adjust';
+        adjust.addEventListener('click', () => showInventoryAdjustment(product));
+        const history = document.createElement('button');
+        history.type = 'button';
+        history.className = 'settings-small-btn';
+        history.textContent = 'History';
+        history.style.marginLeft = '5px';
+        history.addEventListener('click', () => loadInventoryMovements(product.id));
+        actions.append(adjust, history);
+        row.appendChild(actions);
+        tbody.appendChild(row);
+      });
+      if (!products.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 8;
+        cell.textContent = showInventoryLowStockOnly
+          ? 'Walang low-stock na produkto na tumutugma sa search.'
+          : 'Walang nahanap na produkto.';
+        row.appendChild(cell);
+        tbody.appendChild(row);
+      }
+    }
+
+    document.getElementById('inventory-search').addEventListener('input', renderInventoryProducts);
+    document.getElementById('inventory-low-stock-filter').addEventListener('click', () => {
+      showInventoryLowStockOnly = !showInventoryLowStockOnly;
+      renderInventoryProducts();
+    });
+    document.getElementById('inventory-search').addEventListener('keydown', event => {
+      if (event.key === 'Enter' && inventoryProducts.length === 1) showInventoryAdjustment(inventoryProducts[0]);
+    });
+
+    function showInventoryAdjustment(product) {
+      selectedInventoryProduct = product;
+      document.getElementById('inventory-selected-product').textContent =
+        `${product.name} (${product.code}${product.sku ? ` / ${product.sku}` : ''}) — available: ${product.stock} ${product.uom || 'pcs'}`;
+      document.getElementById('inventory-adjust-quantity').value = '1';
+      document.getElementById('inventory-adjust-reason').value = '';
+      document.getElementById('inventory-adjust-message').textContent = '';
+      document.getElementById('inventory-adjust-panel').style.display = 'block';
+      document.getElementById('inventory-adjust-quantity').focus();
+    }
+
+    document.getElementById('inventory-cancel-adjust').addEventListener('click', () => {
+      selectedInventoryProduct = null;
+      document.getElementById('inventory-adjust-panel').style.display = 'none';
+    });
+
+    async function submitInventoryAdjustment(direction) {
+      if (!selectedInventoryProduct) return;
+      const quantity = Number(document.getElementById('inventory-adjust-quantity').value);
+      const reason = document.getElementById('inventory-adjust-reason').value.trim();
+      const message = document.getElementById('inventory-adjust-message');
+      if (!Number.isSafeInteger(quantity) || quantity <= 0 || reason.length < 5 || reason.length > 200) {
+        message.textContent = 'Maglagay ng whole-number quantity at dahilan na 5-200 characters.';
+        return;
+      }
+      message.textContent = 'Sine-save ang inventory movement...';
+      try {
+        const result = await settingsRequest(`/api/products/${selectedInventoryProduct.id}/adjust-stock`, {
+          method: 'POST',
+          body: JSON.stringify({ quantity, direction, reason })
+        });
+        message.textContent = `Updated: ${result.data.previousStock} → ${result.data.stock}`;
+        await loadInventoryProducts();
+        selectedInventoryProduct = inventoryProducts.find(product => product.id === result.data.id) || null;
+        if (selectedInventoryProduct) showInventoryAdjustment(selectedInventoryProduct);
+        else document.getElementById('inventory-adjust-panel').style.display = 'none';
+        document.getElementById('inventory-adjust-message').textContent = `Updated: ${result.data.previousStock} → ${result.data.stock}`;
+        await loadInventoryMovements();
+      } catch (error) {
+        message.textContent = error.message;
+      }
+    }
+
+    document.getElementById('inventory-add-stock').addEventListener('click', () => submitInventoryAdjustment('ADD'));
+    document.getElementById('inventory-remove-stock').addEventListener('click', () => submitInventoryAdjustment('REMOVE'));
+
+    async function loadInventoryMovements(productId) {
+      const tbody = document.getElementById('inventory-movements-body');
+      tbody.replaceChildren();
+      const query = new URLSearchParams({ limit: '100' });
+      if (productId) query.set('productId', String(productId));
+      try {
+        const result = await settingsRequest(`/api/products/movements?${query}`);
+        result.data.forEach(movement => {
+          const row = document.createElement('tr');
+          [
+            movement.createdAt,
+            movement.movementType,
+            `${movement.barcode}${movement.sku ? ` / ${movement.sku}` : ''}`,
+            movement.itemName,
+            `${movement.quantityDelta > 0 ? '+' : ''}${movement.quantityDelta} ${movement.uom || 'pcs'}`,
+            `${movement.previousStock} → ${movement.newStock}`,
+            movement.userName || 'System baseline',
+            `${movement.reason}${movement.reference ? ` | ${movement.reference}` : ''}`
+          ].forEach(value => {
+            const cell = document.createElement('td');
+            cell.textContent = String(value);
+            row.appendChild(cell);
+          });
+          tbody.appendChild(row);
+        });
+        if (!result.data.length) {
+          const row = document.createElement('tr');
+          const cell = document.createElement('td');
+          cell.colSpan = 8;
+          cell.textContent = 'Wala pang recorded inventory movements.';
+          row.appendChild(cell);
+          tbody.appendChild(row);
+        }
+      } catch (error) {
+        setSettingsMessage(`Hindi ma-load ang movement history: ${error.message}`, true);
+      }
+    }
+
+    async function loadProductCatalog() {
+      const tbody = document.getElementById('products-list-body');
+      tbody.replaceChildren();
+      try {
+        const result = await settingsRequest('/api/products');
+        productCatalog = result.data;
+        renderProductCatalog();
+      } catch (error) {
+        setSettingsMessage(`Hindi ma-load ang product list: ${error.message}`, true);
+      }
+    }
+
+    function renderProductCatalog() {
+      const query = document.getElementById('products-search').value.trim().toLowerCase();
+      const tbody = document.getElementById('products-list-body');
+      tbody.replaceChildren();
+      productCatalog
+        .filter(product => [product.code, product.sku, product.name].some(value => String(value || '').toLowerCase().includes(query)))
+        .forEach(product => {
+          const row = document.createElement('tr');
+          [
+            product.code,
+            product.sku || '—',
+            product.name,
+            product.uom || 'pcs',
+            `₱${formatMoney(product.price)}`,
+            product.reorderLevel,
+            product.stock
+          ].forEach(value => {
+            const cell = document.createElement('td');
+            cell.textContent = String(value);
+            row.appendChild(cell);
+          });
+          const actions = document.createElement('td');
+          const edit = document.createElement('button');
+          edit.type = 'button';
+          edit.className = 'settings-small-btn';
+          edit.textContent = 'Edit';
+          edit.addEventListener('click', () => editProduct(product));
+          const deactivate = document.createElement('button');
+          deactivate.type = 'button';
+          deactivate.className = 'settings-small-btn danger';
+          deactivate.textContent = 'Deactivate';
+          deactivate.style.marginLeft = '5px';
+          deactivate.addEventListener('click', async () => {
+            if (!window.confirm(`I-deactivate ang ${product.name}?`)) return;
+            try {
+              await settingsRequest(`/api/products/${product.id}`, { method: 'DELETE' });
+              await loadProductCatalog();
+            } catch (error) {
+              setSettingsMessage(`Hindi ma-deactivate ang produkto: ${error.message}`, true);
+            }
+          });
+          actions.append(edit, deactivate);
+          row.appendChild(actions);
+          tbody.appendChild(row);
+        });
+    }
+
+    document.getElementById('products-search').addEventListener('input', renderProductCatalog);
+    document.getElementById('product-admin-barcode').addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        document.getElementById('product-admin-name').focus();
+      }
+    });
+
+    function resetProductForm() {
+      document.getElementById('product-admin-form').reset();
+      document.getElementById('product-admin-id').value = '';
+      document.getElementById('product-admin-uom').value = 'pcs';
+      document.getElementById('product-admin-reorder').value = '0';
+      document.getElementById('product-admin-initial-qty').value = '0';
+      document.getElementById('product-admin-initial-qty').disabled = false;
+      document.getElementById('product-form-title').textContent = 'Add Product';
+      document.getElementById('product-admin-save').textContent = 'Save Product';
+      document.getElementById('product-admin-cancel').style.display = 'none';
+      document.getElementById('product-admin-message').textContent = '';
+    }
+
+    function editProduct(product) {
+      document.getElementById('product-admin-id').value = String(product.id);
+      document.getElementById('product-admin-barcode').value = product.code;
+      document.getElementById('product-admin-sku').value = product.sku || '';
+      document.getElementById('product-admin-name').value = product.name;
+      document.getElementById('product-admin-uom').value = product.uom || 'pcs';
+      document.getElementById('product-admin-price').value = product.price;
+      document.getElementById('product-admin-reorder').value = product.reorderLevel || 0;
+      document.getElementById('product-admin-initial-qty').value = String(product.stock);
+      document.getElementById('product-admin-initial-qty').disabled = true;
+      document.getElementById('product-form-title').textContent = `Edit Product — current balance ${product.stock}`;
+      document.getElementById('product-admin-save').textContent = 'Update Product';
+      document.getElementById('product-admin-cancel').style.display = 'inline-block';
+      document.getElementById('product-admin-message').textContent = 'Current stock is changed only in Inventory movements.';
+      document.getElementById('product-admin-barcode').focus();
+    }
+
+    document.getElementById('product-admin-cancel').addEventListener('click', resetProductForm);
+    document.getElementById('product-admin-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const id = document.getElementById('product-admin-id').value;
+      const payload = {
+        code: document.getElementById('product-admin-barcode').value.trim(),
+        sku: document.getElementById('product-admin-sku').value.trim(),
+        name: document.getElementById('product-admin-name').value.trim(),
+        uom: document.getElementById('product-admin-uom').value.trim(),
+        price: Number(document.getElementById('product-admin-price').value),
+        reorderLevel: Number(document.getElementById('product-admin-reorder').value)
+      };
+      if (!id) payload.initialQty = Number(document.getElementById('product-admin-initial-qty').value);
+      const message = document.getElementById('product-admin-message');
+      message.textContent = 'Sine-save...';
+      try {
+        await settingsRequest(id ? `/api/products/${id}` : '/api/products', {
+          method: id ? 'PUT' : 'POST',
+          body: JSON.stringify(payload)
+        });
+        resetProductForm();
+        await loadProductCatalog();
+        message.textContent = 'Na-save ang produkto.';
+      } catch (error) {
+        message.textContent = error.message;
+      }
+    });
+
+    const userPermissionInputs = [...document.querySelectorAll('[data-user-permission]')];
+    const userRoleSelect = document.getElementById('user-admin-role');
+    function updateUserPermissionControls() {
+      const adminRole = userRoleSelect.value === 'admin';
+      userPermissionInputs.forEach(input => {
+        if (adminRole) input.checked = true;
+        input.disabled = adminRole;
+      });
+    }
+    userRoleSelect.addEventListener('change', updateUserPermissionControls);
+
+    async function loadManagedUsers() {
+      const tbody = document.getElementById('users-list-body');
+      tbody.replaceChildren();
+      try {
+        const result = await settingsRequest('/api/auth/users');
+        managedUsers = result.data;
+        renderManagedUsers();
+      } catch (error) {
+        setSettingsMessage(`Hindi ma-load ang users: ${error.message}`, true);
+      }
+    }
+
+    function renderManagedUsers() {
+      const tbody = document.getElementById('users-list-body');
+      tbody.replaceChildren();
+      managedUsers.forEach(user => {
+        const row = document.createElement('tr');
+        const moduleNames = Object.entries(user.modulePermissions || {})
+          .filter(([, enabled]) => enabled)
+          .map(([module]) => ({ pos: 'POS', inventory: 'Inventory', products: 'Products', reports: 'Reports' })[module])
+          .filter(Boolean);
+        [
+          user.name,
+          user.username,
+          user.role,
+          user.isActive ? 'Active' : 'Disabled',
+          user.role === 'admin' ? 'All modules' : moduleNames.join(', ') || 'No modules'
+        ].forEach(value => {
+          const cell = document.createElement('td');
+          cell.textContent = String(value);
+          row.appendChild(cell);
+        });
+        const actions = document.createElement('td');
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.className = 'settings-small-btn';
+        edit.textContent = 'Edit';
+        edit.addEventListener('click', () => editManagedUser(user));
+        if (user.id !== currentUser.id) actions.appendChild(edit);
+        if (user.id !== currentUser.id) {
+          const toggle = document.createElement('button');
+          toggle.type = 'button';
+          toggle.className = user.isActive ? 'settings-small-btn danger' : 'settings-small-btn';
+          toggle.textContent = user.isActive ? 'Disable' : 'Enable';
+          toggle.style.marginLeft = '5px';
+          toggle.addEventListener('click', async () => {
+            if (user.isActive && !window.confirm(`I-disable ang account ni ${user.name}?`)) return;
+            try {
+              if (user.isActive) {
+                await settingsRequest(`/api/auth/users/${user.id}`, { method: 'DELETE' });
+              } else {
+                await settingsRequest(`/api/auth/users/${user.id}`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ ...user, isActive: true })
+                });
+              }
+              await loadManagedUsers();
+            } catch (error) {
+              setSettingsMessage(`Hindi ma-update ang user: ${error.message}`, true);
+            }
+          });
+          actions.appendChild(toggle);
+        }
+        row.appendChild(actions);
+        tbody.appendChild(row);
+      });
+    }
+
+    function editManagedUser(user) {
+      document.getElementById('user-admin-id').value = String(user.id);
+      document.getElementById('user-admin-name').value = user.name;
+      document.getElementById('user-admin-username').value = user.username;
+      document.getElementById('user-admin-password').value = '';
+      document.getElementById('user-admin-password').required = false;
+      userRoleSelect.value = user.role;
+      userPermissionInputs.forEach(input => {
+        input.checked = user.role === 'admin' || user.modulePermissions?.[input.dataset.userPermission] === true;
+      });
+      updateUserPermissionControls();
+      document.getElementById('user-form-title').textContent = `Edit User — ${user.isActive ? 'Active' : 'Disabled'}`;
+      document.getElementById('user-admin-save').textContent = 'Update User';
+      document.getElementById('user-admin-cancel').style.display = 'inline-block';
+      document.getElementById('user-admin-message').textContent = '';
+    }
+
+    function resetUserForm() {
+      document.getElementById('user-admin-form').reset();
+      document.getElementById('user-admin-id').value = '';
+      document.getElementById('user-admin-password').required = true;
+      userRoleSelect.value = 'cashier';
+      userPermissionInputs.forEach(input => {
+        input.checked = cashierModuleDefaults[input.dataset.userPermission] === true;
+      });
+      updateUserPermissionControls();
+      document.getElementById('user-form-title').textContent = 'Add User';
+      document.getElementById('user-admin-save').textContent = 'Save User';
+      document.getElementById('user-admin-cancel').style.display = 'none';
+      document.getElementById('user-admin-message').textContent = '';
+    }
+
+    document.getElementById('user-admin-cancel').addEventListener('click', resetUserForm);
+    document.getElementById('user-admin-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const id = document.getElementById('user-admin-id').value;
+      const target = id ? managedUsers.find(user => user.id === Number(id)) : null;
+      const role = userRoleSelect.value;
+      const modulePermissions = Object.fromEntries(userPermissionInputs.map(input => [
+        input.dataset.userPermission,
+        role === 'admin' || input.checked
+      ]));
+      const payload = {
+        name: document.getElementById('user-admin-name').value.trim(),
+        username: document.getElementById('user-admin-username').value.trim(),
+        role,
+        modulePermissions
+      };
+      const password = document.getElementById('user-admin-password').value;
+      if (password) payload.password = password;
+      if (id) payload.isActive = target?.isActive !== false;
+      const message = document.getElementById('user-admin-message');
+      message.textContent = 'Sine-save...';
+      try {
+        await settingsRequest(id ? `/api/auth/users/${id}` : '/api/auth/users', {
+          method: id ? 'PUT' : 'POST',
+          body: JSON.stringify(id ? payload : { ...payload, pin: password })
+        });
+        resetUserForm();
+        await loadManagedUsers();
+        message.textContent = 'Na-save ang user at access.';
+      } catch (error) {
+        message.textContent = error.message;
+      }
+    });
+    resetUserForm();
+
+    async function loadBrandingForm() {
+      try {
+        const result = await settingsRequest('/api/settings/branding');
+        const settings = result.data;
+        brandingSettings = { ...brandingSettings, ...settings };
+        document.getElementById('branding-app-name').value = settings.appName || '';
+        document.getElementById('branding-address').value = settings.address || '';
+        document.getElementById('branding-tin').value = settings.tin || '';
+        document.getElementById('branding-phone').value = settings.phone || '';
+        document.getElementById('branding-receipt-footer').value = settings.receiptFooter || '';
+        settingsLogoDataUrl = settings.logoDataUrl || null;
+        renderBrandingLogoPreview();
+      } catch (error) {
+        setSettingsMessage(`Hindi ma-load ang branding: ${error.message}`, true);
+      }
+    }
+
+    function renderBrandingLogoPreview() {
+      const preview = document.getElementById('branding-logo-preview');
+      if (settingsLogoDataUrl) {
+        preview.src = settingsLogoDataUrl;
+        preview.style.display = 'block';
+      } else {
+        preview.removeAttribute('src');
+        preview.style.display = 'none';
+      }
+    }
+
+    document.getElementById('branding-logo-file').addEventListener('change', event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+      if (!allowedTypes.includes(file.type) || file.size > 512 * 1024) {
+        event.target.value = '';
+        setSettingsMessage('Logo must be PNG, JPEG, or WebP and no larger than 512 KB.', true);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        settingsLogoDataUrl = reader.result;
+        renderBrandingLogoPreview();
+        setSettingsMessage('Logo ready. Save Branding to apply it.');
+      };
+      reader.onerror = () => setSettingsMessage('Hindi mabasa ang logo file.', true);
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('branding-remove-logo').addEventListener('click', () => {
+      settingsLogoDataUrl = null;
+      document.getElementById('branding-logo-file').value = '';
+      renderBrandingLogoPreview();
+    });
+
+    document.getElementById('branding-admin-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const payload = {
+        appName: document.getElementById('branding-app-name').value.trim(),
+        address: document.getElementById('branding-address').value.trim(),
+        tin: document.getElementById('branding-tin').value.trim(),
+        phone: document.getElementById('branding-phone').value.trim(),
+        receiptFooter: document.getElementById('branding-receipt-footer').value.trim(),
+        logoDataUrl: settingsLogoDataUrl
+      };
+      try {
+        const result = await settingsRequest('/api/settings/branding', {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+        brandingSettings = { ...brandingSettings, ...result.data };
+        document.title = brandingSettings.appName;
+        setSettingsMessage('Na-save ang app branding at receipt details.');
+      } catch (error) {
+        setSettingsMessage(`Hindi na-save ang branding: ${error.message}`, true);
+      }
+    });
+
+    // PRICE OVERRIDE LOGIC
+    const priceOverrideModal = document.getElementById('price-override-modal');
+    const overrideNewPriceInput = document.getElementById('override-new-price-input');
+    let activeOverrideIndex = null;
+
+    document.getElementById('btn-price-override').addEventListener('click', () => {
+      if (cart.length === 0) {
+        alert("Walang laman ang cart para palitan ang presyo!");
+        return;
+      }
+
+      activeOverrideIndex = selectedCartIndex;
+      if (activeOverrideIndex === null || !cart[activeOverrideIndex] || cart[activeOverrideIndex].type !== 'item') {
+        activeOverrideIndex = cart.findLastIndex(e => e.type === 'item');
+      }
+
+      if (activeOverrideIndex !== -1 && cart[activeOverrideIndex] && cart[activeOverrideIndex].type === 'item') {
+        const item = cart[activeOverrideIndex];
+        document.getElementById('override-item-name').innerText = item.name;
+        document.getElementById('override-current-price').innerText = `₱${formatMoney(item.price)}`;
+        overrideNewPriceInput.value = item.price;
+        priceOverrideModal.classList.add('active');
+        setTimeout(() => overrideNewPriceInput.focus(), 100);
+      } else {
+        alert("Pumili muna ng item sa cart na gustong palitan ng presyo!");
+      }
+    });
+
+    document.getElementById('price-override-modal-close-btn').addEventListener('click', () => priceOverrideModal.classList.remove('active'));
+    document.getElementById('btn-cancel-price-override').addEventListener('click', () => priceOverrideModal.classList.remove('active'));
+
+    document.getElementById('btn-confirm-price-override').addEventListener('click', () => {
+      const newPrice = parseFloat(overrideNewPriceInput.value);
+      if (!isNaN(newPrice) && newPrice >= 0 && activeOverrideIndex !== null) {
+        cart[activeOverrideIndex].price = newPrice;
+        selectedCartIndex = activeOverrideIndex;
+        renderCart();
+        priceOverrideModal.classList.remove('active');
+      } else {
+        alert("Mag-lagay ng tamang presyo!");
+      }
+    });
+
+    // HELD TRANSACTIONS LOGIC & MODAL
+    const heldModal = document.getElementById('held-modal');
+    const heldOrdersContainer = document.getElementById('held-orders-container');
+
+    document.getElementById('btn-hold-order').addEventListener('click', () => {
+      if (cart.length > 0) {
+        if (confirm("Gusto mo bang itabi (Hold) muna ang kasalukuyang order na ito?")) {
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          heldOrders.push({
+            id: Date.now(),
+            time: timeStr,
+            account: accountInput.value.trim() || "Guest Customer",
+            cart: JSON.parse(JSON.stringify(cart)),
+            discount: appliedDiscount,
+            discountReason: appliedDiscountReason,
+            discountType: appliedDiscountType,
+            total: currentTotal
+          });
+
+          cart = [];
+          selectedCartIndex = null;
+          appliedDiscount = 0;
+          appliedDiscountReason = '';
+          appliedDiscountType = '';
+          accountInput.value = "";
+          renderCart();
+
+          updateHeldBadge();
+          openHeldModal();
+        }
+      } else {
+        openHeldModal();
+      }
+    });
+
+    document.getElementById('tool-orders').addEventListener('click', openHeldModal);
+
+    function updateHeldBadge() {
+      const tag = document.getElementById('system-status-tag');
+      if (heldOrders.length > 0) {
+        tag.innerText = `Held (${heldOrders.length})`;
+        tag.style.background = "#0284c7";
+      } else {
+        tag.innerText = "Ready";
+        tag.style.background = "#94a3b8";
+      }
+    }
+
+    function openHeldModal() {
+      renderHeldOrdersList();
+      heldModal.classList.add('active');
+    }
+
+    function closeHeldModal() {
+      heldModal.classList.remove('active');
+      scanInput.focus();
+    }
+
+    document.getElementById('held-modal-close-btn').addEventListener('click', closeHeldModal);
+    document.getElementById('btn-close-held-modal').addEventListener('click', closeHeldModal);
+
+    function renderHeldOrdersList() {
+      heldOrdersContainer.innerHTML = "";
+
+      if (heldOrders.length === 0) {
+        heldOrdersContainer.innerHTML = `
+          <div style="text-align: center; padding: 30px 10px; color: #64748b; font-weight: 600;">
+            <i class="fa-solid fa-inbox" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 10px;"></i>
+            <p>Walang nakatagong (Held) transaction sa ngayon.</p>
+          </div>
+        `;
+        return;
+      }
+
+      heldOrders.forEach((order) => {
+        const itemQty = order.cart.filter(e => e.type === 'item').reduce((sum, item) => sum + item.qty, 0);
+        const card = document.createElement('div');
+        card.className = 'held-item-card';
+        card.innerHTML = `
+          <div class="held-item-info">
+            <div class="held-item-title">
+              <i class="fa-solid fa-user"></i> ${order.account}
+            </div>
+            <div class="held-item-sub">
+              <i class="fa-regular fa-clock"></i> ${order.time} | <strong>${itemQty} Total Item(s)</strong>
+            </div>
+            <div style="font-weight: 800; color: #1e293b; font-size: 1rem; margin-top: 2px;">
+              ₱${formatMoney(order.total)}
+            </div>
+          </div>
+          <div class="held-actions">
+            <button class="btn-restore-held" onclick="restoreHeldOrder(${order.id})">
+              <i class="fa-solid fa-rotate-left"></i> RECALL
+            </button>
+            <button class="btn-delete-held" onclick="deleteHeldOrder(${order.id})" title="Delete Order">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        `;
+        heldOrdersContainer.appendChild(card);
+      });
+    }
+
+    window.restoreHeldOrder = function(id) {
+      if (cart.length > 0) {
+        if (!confirm("May kasalukuyang laman ang cart. Sigurado ka bang gusto mo itong palitan ng held order?")) {
+          return;
+        }
+      }
+
+      const orderIdx = heldOrders.findIndex(o => o.id === id);
+      if (orderIdx !== -1) {
+        const selected = heldOrders[orderIdx];
+        cart = JSON.parse(JSON.stringify(selected.cart));
+        selectedCartIndex = cart.length - 1;
+        appliedDiscount = selected.discount;
+        appliedDiscountReason = selected.discountReason || '';
+        appliedDiscountType = selected.discountType || '';
+        accountInput.value = selected.account === "Guest Customer" ? "" : selected.account;
+
+        heldOrders.splice(orderIdx, 1);
+        updateHeldBadge();
+        renderCart();
+        closeHeldModal();
+      }
+    };
+
+    window.deleteHeldOrder = function(id) {
+      if (confirm("Sigurado ka bang gustong idelete ang held transaction na ito?")) {
+        heldOrders = heldOrders.filter(o => o.id !== id);
+        updateHeldBadge();
+        renderHeldOrdersList();
+      }
+    };
+
+    // SUBTOTAL BUTTON
+    document.getElementById('btn-subtotal').addEventListener('click', () => {
+      if (cart.length === 0) {
+        alert("Walang laman ang cart para i-subtotal!");
+        return;
+      }
+      const lastEntry = cart[cart.length - 1];
+      if (lastEntry && lastEntry.type === 'subtotal') {
+        alert("Naka-subtotal na ang mga huling na-punch na item!");
+        return;
+      }
+
+      let runningTotal = 0;
+      cart.forEach(entry => {
+        if (entry.type === 'item') runningTotal += (entry.price * entry.qty);
+      });
+
+      cart.push({ type: 'subtotal', amount: runningTotal });
+      renderCart();
+    });
+
+    // ================= UPDATED CARD PAYMENT MODAL LOGIC =================
+    const cardModal = document.getElementById('card-modal');
+    const cardDigitsInput = document.getElementById('card-digits-input');
+    const cardBatchInput = document.getElementById('card-batch-input');
+    const cardBankInput = document.getElementById('card-bank-input');
+    const cardRefInput = document.getElementById('card-ref-input');
+    const cardVerification = document.getElementById('card-payment-verified');
+    const cardPreviewDigits = document.getElementById('card-preview-digits');
+
+    // Live Card Preview Text Update
+    cardDigitsInput.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/\D/g, '').slice(0, 4);
+      e.target.value = val;
+      cardPreviewDigits.innerText = val ? val : "CARD";
+    });
+
+    document.getElementById('btn-card-payment').addEventListener('click', () => {
+      if (cart.length === 0) {
+        alert("Walang laman ang cart!");
+        return;
+      }
+      document.getElementById('card-modal-total-due').innerText = formatMoney(currentTotal);
+      cardDigitsInput.value = "";
+      cardBatchInput.value = "";
+      cardBankInput.value = "";
+      cardRefInput.value = "";
+      cardVerification.checked = false;
+      cardPreviewDigits.innerText = "CARD";
+      
+      cardModal.classList.add('active');
+      setTimeout(() => cardBankInput.focus(), 100);
+    });
+
+    document.getElementById('card-modal-close-btn').addEventListener('click', () => cardModal.classList.remove('active'));
+    document.getElementById('btn-cancel-card').addEventListener('click', () => cardModal.classList.remove('active'));
+
+    document.getElementById('btn-confirm-card').addEventListener('click', () => {
+      const last4 = cardDigitsInput.value.trim();
+      const batch = cardBatchInput.value.trim();
+      const bank = cardBankInput.value.trim();
+      const refNo = cardRefInput.value.trim();
+      if (!bank) {
+        alert('Ilagay ang bangko o card terminal na nag-approve ng bayad.');
+        cardBankInput.focus();
+        return;
+      }
+      if (!refNo) {
+        alert('Ilagay ang totoong approval/reference number mula sa card terminal.');
+        cardRefInput.focus();
+        return;
+      }
+      if (!cardVerification.checked) {
+        alert('I-verify muna sa card terminal na approved ang bayad.');
+        return;
+      }
+      cardModal.classList.remove('active');
+      finalizeTransaction("CARD", 0, 0, refNo, { cardDigits: last4, batchNo: batch, provider: bank });
+    });
+
+    // E-WALLET MODAL LOGIC
+    const ewalletModal = document.getElementById('ewallet-modal');
+    const ewalletRefInput = document.getElementById('ewallet-ref-input');
+    let selectedWalletType = "GCash";
+
+    const ewalletVerification = document.getElementById('ewallet-payment-verified');
+    document.getElementById('btn-ewallet-payment').addEventListener('click', () => {
+      if (cart.length === 0) {
+        alert("Walang laman ang cart!");
+        return;
+      }
+      document.getElementById('ewallet-modal-total-due').innerText = formatMoney(currentTotal);
+      ewalletRefInput.value = "";
+      ewalletVerification.checked = false;
+      ewalletModal.classList.add('active');
+      setTimeout(() => ewalletRefInput.focus(), 100);
+    });
+
+    function selectWalletProvider(el) {
+      document.querySelectorAll('.ewallet-option').forEach(opt => opt.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedWalletType = el.getAttribute('data-wallet');
+    }
+
+    document.getElementById('ewallet-modal-close-btn').addEventListener('click', () => ewalletModal.classList.remove('active'));
+    document.getElementById('btn-cancel-ewallet').addEventListener('click', () => ewalletModal.classList.remove('active'));
+
+    document.getElementById('btn-confirm-ewallet').addEventListener('click', () => {
+      const refNo = ewalletRefInput.value.trim();
+      if (!refNo) {
+        alert('Ilagay ang totoong reference number ng natanggap na bayad.');
+        ewalletRefInput.focus();
+        return;
+      }
+      if (!ewalletVerification.checked) {
+        alert('I-verify muna sa provider app na natanggap na ang bayad.');
+        return;
+      }
+      ewalletModal.classList.remove('active');
+      finalizeTransaction('E-WALLET', 0, 0, refNo, { provider: selectedWalletType });
+    });
+
+    const bankModal = document.getElementById('bank-modal');
+    const bankNameInput = document.getElementById('bank-name-input');
+    const bankRefInput = document.getElementById('bank-ref-input');
+    const bankVerification = document.getElementById('bank-payment-verified');
+    document.getElementById('btn-bank-payment').addEventListener('click', () => {
+      if (cart.length === 0) {
+        alert('Walang laman ang cart!');
+        return;
+      }
+      document.getElementById('bank-modal-total-due').innerText = formatMoney(currentTotal);
+      bankNameInput.value = '';
+      bankRefInput.value = '';
+      bankVerification.checked = false;
+      bankModal.classList.add('active');
+      setTimeout(() => bankNameInput.focus(), 100);
+    });
+    document.getElementById('bank-modal-close-btn').addEventListener('click', () => bankModal.classList.remove('active'));
+    document.getElementById('btn-cancel-bank').addEventListener('click', () => bankModal.classList.remove('active'));
+    document.getElementById('btn-confirm-bank').addEventListener('click', () => {
+      const bankName = bankNameInput.value.trim();
+      const refNo = bankRefInput.value.trim();
+      if (!bankName) {
+        alert('Ilagay kung saang bangko natanggap ang transfer.');
+        bankNameInput.focus();
+        return;
+      }
+      if (!refNo) {
+        alert('Ilagay ang totoong reference number ng natanggap na transfer.');
+        bankRefInput.focus();
+        return;
+      }
+      if (!bankVerification.checked) {
+        alert('I-verify muna sa bank account na natanggap na ang transfer.');
+        return;
+      }
+      bankModal.classList.remove('active');
+      finalizeTransaction('BANK', 0, 0, refNo, { provider: bankName });
+    });
+
+    // DISCOUNT MODAL LOGIC
+    const discountModal = document.getElementById('discount-modal');
+
+    document.getElementById('btn-discount').addEventListener('click', () => {
+      if (cart.length === 0) {
+        alert("Mag-punch muna ng item bago mag-apply ng discount!");
+        return;
+      }
+      document.getElementById('custom-discount-input').value = "";
+      discountModal.classList.add('active');
+    });
+
+    document.getElementById('discount-modal-close-btn').addEventListener('click', () => discountModal.classList.remove('active'));
+
+    function applyDiscountType(type) {
+      let itemsSum = 0;
+      cart.forEach(e => { if(e.type==='item') itemsSum += (e.price * e.qty); });
+
+      let nextDiscount = 0;
+      let nextDiscountType = '';
+      if (type === 'senior') {
+        nextDiscount = itemsSum * 0.20;
+        nextDiscountType = 'SENIOR_PWD';
+      } else if (type === 'promo') {
+        nextDiscount = itemsSum * 0.10;
+        nextDiscountType = 'PROMO';
+      } else if (type === 'custom') {
+        const customVal = parseFloat(document.getElementById('custom-discount-input').value) || 0;
+        nextDiscount = customVal;
+        nextDiscountType = 'CUSTOM';
+      } else if (type === 'clear') {
+        nextDiscount = 0;
+      }
+
+      const maxDiscount = Math.floor(itemsSum * 0.2 * 100) / 100;
+      if (nextDiscount > maxDiscount) {
+        alert('Ang discount ay hindi maaaring lumampas sa 20% ng subtotal.');
+        return;
+      }
+      if (!Number.isFinite(nextDiscount) || nextDiscount < 0) {
+        alert('Maglagay ng valid na discount amount.');
+        return;
+      }
+
+      let reason = '';
+      if (nextDiscount > 0) {
+        reason = prompt('Ilagay ang dahilan ng discount (5-200 characters):', '') || '';
+        reason = reason.trim();
+        if (reason.length < 5 || reason.length > 200) {
+          alert('Kailangan ng dahilan na 5-200 characters. Hindi inilapat ang discount.');
+          return;
+        }
+      }
+
+      appliedDiscount = nextDiscount;
+      appliedDiscountType = nextDiscountType;
+      appliedDiscountReason = reason;
+      renderCart();
+      discountModal.classList.remove('active');
+    }
+
+    // CUSTOMER LOOKUP LOGIC
+    const customerModal = document.getElementById('customer-modal');
+    const custSearchInput = document.getElementById('cust-search-input');
+    const customerDirectoryList = document.getElementById('customer-directory-list');
+
+    document.getElementById('btn-customer-lookup').addEventListener('click', () => {
+      custSearchInput.value = "";
+      renderCustomerDirectory(customerDatabase);
+      customerModal.classList.add('active');
+    });
+
+    document.getElementById('customer-modal-close-btn').addEventListener('click', () => customerModal.classList.remove('active'));
+    document.getElementById('btn-close-customer').addEventListener('click', () => customerModal.classList.remove('active'));
+
+    function renderCustomerDirectory(list) {
+      customerDirectoryList.innerHTML = "";
+      list.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'customer-item';
+        item.innerHTML = `
+          <div class="customer-info-main">
+            <div class="customer-avatar">${c.name.charAt(0)}</div>
+            <div style="font-weight: 700; color: #1e293b;">${c.name}</div>
+          </div>
+          <span class="cust-tag ${c.tagClass}">${c.tag}</span>
+        `;
+        item.addEventListener('click', () => {
+          accountInput.value = `${c.name} (${c.tag})`;
+          customerModal.classList.remove('active');
+        });
+        customerDirectoryList.appendChild(item);
+      });
+    }
+
+    function filterCustomerDirectory() {
+      const q = custSearchInput.value.toLowerCase().trim();
+      const filtered = customerDatabase.filter(c => c.name.toLowerCase().includes(q) || c.tag.toLowerCase().includes(q));
+      renderCustomerDirectory(filtered);
+    }
+
+    // VOID CART
+    document.getElementById('btn-void').addEventListener('click', async () => {
+      if (pendingSale) {
+        alert('May pending sale na kailangang i-resolve muna. Hindi maaaring i-void ito bilang draft cart.');
+        return;
+      }
+      const items = cart.filter(item => item.type === 'item');
+      if (items.length === 0 || !confirm("Sigurado ka bang i-void ang buong cart?")) return;
+
+      const reason = (prompt('Ilagay ang dahilan ng pag-void (5-200 characters):', '') || '').trim();
+      if (reason.length < 5 || reason.length > 200) {
+        alert('Kailangan ng dahilan na 5-200 characters. Hindi ni-void ang cart.');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/audit/cart-voids', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `******`
+          },
+          body: JSON.stringify({
+            reason,
+            transactionNumber: document.getElementById('txn-number').innerText,
+            items: items.map(item => ({ productId: item.id, quantity: item.qty }))
+          })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || `Void audit failed with status ${response.status}`);
+        }
+
+        cart = [];
+        selectedCartIndex = null;
+        appliedDiscount = 0;
+        appliedDiscountReason = '';
+        appliedDiscountType = '';
+        renderCart();
+      } catch (error) {
+        console.error('Unable to record cart void:', error);
+        alert(`Hindi naitala ang void kaya hindi ginalaw ang cart.\n\n${error.message}`);
+      }
+    });
+
+    // SPLIT BILL
+    document.getElementById('btn-split-bill').addEventListener('click', () => {
+      if (currentTotal === 0) {
+        alert("Mag-punch muna ng items!");
+        return;
+      }
+      const count = parseInt(prompt("Ilang tao ang maghahati sa bill?", "2"));
+      if (count && count > 0) {
+        const perPerson = currentTotal / count;
+        alert(`✂️ SPLIT BILL RESULT:\n\nTotal Amount: ₱${formatMoney(currentTotal)}\nHatiin sa: ${count} tao\n\n👉 Bawat isa ay magbabayad ng: ₱${formatMoney(perPerson)}`);
+      }
+    });
+
+    // SALES REPORT LOGIC
+    const salesReportModal = document.getElementById('sales-report-modal');
+
+    document.getElementById('btn-sales-report').addEventListener('click', () => {
+      document.getElementById('sr-total-sales').innerText = formatMoney(shiftSales.totalAmount);
+      document.getElementById('sr-total-count').innerText = shiftSales.totalCount;
+      document.getElementById('sr-cash-sales').innerText = formatMoney(shiftSales.cash);
+      document.getElementById('sr-card-sales').innerText = formatMoney(shiftSales.card);
+      document.getElementById('sr-bank-sales').innerText = formatMoney(shiftSales.bank);
+      document.getElementById('sr-ewallet-sales').innerText = formatMoney(shiftSales.ewallet);
+      document.getElementById('btn-view-audit').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+      
+      salesReportModal.classList.add('active');
+    });
+
+    document.getElementById('btn-view-audit').addEventListener('click', async () => {
+      const panel = document.getElementById('audit-log-panel');
+      const list = document.getElementById('audit-log-list');
+      panel.style.display = 'block';
+      list.replaceChildren();
+      list.textContent = 'Loading audit log...';
+      try {
+        const response = await fetch('/api/audit?limit=100', {
+          headers: { 'Authorization': `******` }
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success || !Array.isArray(data.data)) {
+          throw new Error(data.message || `Audit log request failed with status ${response.status}`);
+        }
+        list.replaceChildren();
+        if (data.data.length === 0) {
+          list.textContent = 'Wala pang audit events sa branch na ito.';
+          return;
+        }
+        data.data.forEach(entry => {
+          const row = document.createElement('div');
+          row.style.cssText = 'border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; margin-bottom: 8px;';
+          const summary = document.createElement('div');
+          summary.style.fontWeight = '700';
+          summary.textContent = `${entry.eventType} — ${entry.userName} (${entry.username}) — ${entry.createdAt}`;
+          const reason = document.createElement('div');
+          reason.textContent = `Reason: ${entry.reason}`;
+          const details = document.createElement('div');
+          details.style.cssText = 'font-size: 0.8rem; color: #475569; overflow-wrap: anywhere;';
+          details.textContent = JSON.stringify(entry.details);
+          row.append(summary, reason, details);
+          list.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Unable to load audit log:', error);
+        list.textContent = `Hindi ma-load ang audit log: ${error.message}`;
+      }
+    });
+
+    document.getElementById('sales-report-modal-close-btn').addEventListener('click', () => salesReportModal.classList.remove('active'));
+    document.getElementById('btn-close-sales-report').addEventListener('click', () => salesReportModal.classList.remove('active'));
+
+    // OPEN DRAWER LOGIC
+    const openDrawerModal = document.getElementById('open-drawer-modal');
+
+    document.getElementById('btn-open-drawer').addEventListener('click', () => {
+      openDrawerModal.classList.add('active');
+    });
+
+    document.getElementById('open-drawer-modal-close-btn').addEventListener('click', () => openDrawerModal.classList.remove('active'));
+    document.getElementById('btn-close-drawer-modal').addEventListener('click', () => openDrawerModal.classList.remove('active'));
+
+    // Record the payment mode and persist the sale; no external payment is processed here.
+    async function finalizeTransaction(method, tenderedAmt = 0, changeAmt = 0, refNo = "", paymentMeta = {}) {
+      const currentTxnNo = pendingSale ? pendingSale.payload.txnNo : document.getElementById('txn-number').innerText;
+      const now = new Date();
+
+      if (pendingSaleRecoveryError) {
+        alert('Hindi ligtas magproseso ng bagong sale habang hindi nareresolba ang pending recovery data.');
+        return;
+      }
+      if (!pendingSale && !transactionNumberReady) {
+        alert('Hintaying makuha ang transaction number mula sa server bago mag-checkout.');
+        return;
+      }
+      if (!cart || cart.length === 0) {
+        alert('Cart is empty.');
+        return;
+      }
+      if (pendingSale && (
+        JSON.stringify(cart) !== JSON.stringify(pendingSale.cart) ||
+        Number(appliedDiscount) !== Number(pendingSale.discountAmount) ||
+        appliedDiscountReason !== (pendingSale.discountReason || '') ||
+        appliedDiscountType !== (pendingSale.discountType || '') ||
+        (accountInput.value.trim() || 'GUEST CUSTOMER') !== pendingSale.customerName
+      )) {
+        alert('May pending sale na kailangang i-resolve muna. Huwag baguhin ang cart; i-retry ang eksaktong transaction o humingi ng tulong sa admin.');
+        return;
+      }
+
+      let itemsSum = 0;
+      cart.forEach(e => { if(e.type==='item') itemsSum += (e.price * e.qty); });
+
+      if (itemsSum <= 0 || currentTotal <= 0) {
+        alert('Total amount must be greater than zero before payment can be processed.');
+        return;
+      }
+
+      const transactionPayload = pendingSale ? pendingSale.payload : {
+        txnNo: currentTxnNo,
+        customerName: accountInput.value.trim() || 'GUEST CUSTOMER',
+        items: cart.filter(item => item.type === 'item').map(item => ({
+          productId: item.id,
+          quantity: item.qty
+        })),
+        discountAmount: appliedDiscount,
+        discountReason: appliedDiscountReason,
+        discountType: appliedDiscountType,
+        expectedTotal: currentTotal,
+        tenderedAmount: method.toUpperCase() === 'CASH' ? tenderedAmt : currentTotal,
+        changeAmount: method.toUpperCase() === 'CASH' ? changeAmt : 0,
+        paymentMethod: method.toUpperCase(),
+        referenceNo: refNo || '',
+        notes: paymentMeta.provider ? `Payment provider: ${paymentMeta.provider}` : accountInput.value.trim() || 'GUEST CUSTOMER'
+      };
+
+      let saleWasRejected = false;
+      try {
+        if (!pendingSale) {
+          pendingSale = {
+            userId: currentUser.id,
+            branch: currentUser.branch,
+            txnNo: currentTxnNo,
+            customerName: transactionPayload.customerName,
+            cart: JSON.parse(JSON.stringify(cart)),
+            discountAmount: appliedDiscount,
+            discountReason: appliedDiscountReason,
+            discountType: appliedDiscountType,
+            tenderedAmt: transactionPayload.tenderedAmount,
+            changeAmt: transactionPayload.changeAmount,
+            payload: transactionPayload
+          };
+          try {
+            localStorage.setItem(pendingSaleKey, JSON.stringify(pendingSale));
+          } catch (storageError) {
+            pendingSale = null;
+            throw new Error(`Hindi ma-save ang recovery copy ng sale kaya hindi ito ipinadala: ${storageError.message}`);
+          }
+        }
+
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch('/api/transactions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(transactionPayload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success || !data.data) {
+          const rejectedWithoutSaving = response.status === 400 ||
+            response.status === 503 ||
+            (response.status === 409 && /insufficient stock/i.test(data.message || ''));
+          if (rejectedWithoutSaving && pendingSale) {
+            localStorage.removeItem(pendingSaleKey);
+            pendingSale = null;
+            saleWasRejected = true;
+          }
+          throw new Error(data.message || `Sale save failed with status ${response.status}`);
+        }
+
+        const saved = data.data;
+        localStorage.removeItem(pendingSaleKey);
+        const receiptTenderedAmt = pendingSale.tenderedAmt;
+        const receiptChangeAmt = pendingSale.changeAmt;
+        pendingSale = null;
+        const newTxnData = {
+          txnNo: saved.txnNo,
+          dateStr: now.toLocaleDateString(),
+          timeStr: document.getElementById('clock-display').innerText,
+          cashier: currentUser.name,
+          customer: saved.customerName,
+          items: saved.items.map(item => ({
+            id: item.productId,
+            code: item.productCode,
+            name: item.productName,
+            price: item.unitPrice,
+            qty: item.quantity
+          })),
+          appliedDiscount: saved.discountAmount,
+          total: saved.totalAmount,
+          paymentMethod: saved.paymentMethod,
+          tenderedAmt: receiptTenderedAmt,
+          changeAmt: receiptChangeAmt,
+          refNo: saved.referenceNo || refNo,
+          paymentProvider: paymentMeta.provider || '',
+          cardDigits: paymentMeta.cardDigits || '',
+          batchNo: paymentMeta.batchNo || ''
+        };
+
+        completedTransactions.push(newTxnData);
+        shiftSales.totalAmount += saved.totalAmount;
+        shiftSales.totalCount++;
+        if (saved.paymentMethod === 'CASH') shiftSales.cash += saved.totalAmount;
+        if (saved.paymentMethod === 'CARD') shiftSales.card += saved.totalAmount;
+        if (saved.paymentMethod === 'BANK') shiftSales.bank += saved.totalAmount;
+        if (saved.paymentMethod === 'E-WALLET') shiftSales.ewallet += saved.totalAmount;
+
+        cart = [];
+        selectedCartIndex = null;
+        appliedDiscount = 0;
+        appliedDiscountReason = '';
+        appliedDiscountType = '';
+        accountInput.value = '';
+        renderCart();
+
+        const savedSequence = parseInt(saved.txnNo.slice(saved.txnNo.lastIndexOf('-') + 1), 10);
+        transactionCounter = Math.max(transactionCounter, savedSequence + 1);
+        updateTxnDisplay();
+        showReceiptPreviewModal(newTxnData, false);
+        console.log('Transaction saved to database:', saved);
+      } catch (error) {
+        console.error('Sale was not confirmed as saved:', error);
+        if (saleWasRejected && /prices or discount changed/i.test(error.message)) {
+          await loadProducts();
+          let missingProduct = false;
+          cart.forEach(item => {
+            if (item.type !== 'item') return;
+            const currentProduct = sampleProducts.find(product => product.id === item.id);
+            if (!currentProduct) {
+              missingProduct = true;
+              return;
+            }
+            item.price = currentProduct.price;
+            item.name = currentProduct.name;
+            item.code = currentProduct.code;
+          });
+          renderCart();
+          if (missingProduct) alert('May product na inalis o hindi na available. Alisin ito sa cart bago magpatuloy.');
+        }
+        const recoveryMessage = saleWasRejected
+          ? 'Tinanggihan ng server ang sale at hindi ito na-save. Nananatili ang cart para maitama. I-reconcile muna ang aktuwal na natanggap na bayad bago mag-checkout muli.'
+          : 'Hindi makumpirma ang pag-save ng sale. Nananatili ang eksaktong cart/recovery copy. I-check ang transaction history bago mag-retry; hindi dapat tumanggap muli ng bayad.';
+        alert(`${recoveryMessage}\n\n${error.message}`);
+      }
+    }
+
+    // CASH PAYMENT MODAL LOGIC
+    const cashModal = document.getElementById('cash-modal');
+    const modalTotalDue = document.getElementById('modal-total-due');
+    const modalChangeDue = document.getElementById('modal-change-due');
+    const cashTenderedInput = document.getElementById('cash-tendered-input');
+    const btnConfirmCash = document.getElementById('btn-confirm-cash');
+
+    function openCashModal() {
+      if (cart.length === 0) {
+        alert("Walang laman ang cart! Mag-scan muna ng item.");
+        return;
+      }
+      if (pendingSale) {
+        alert('Recovery retry ito. Huwag tumanggap muli ng bayad; susubukan lang kumpirmahin ang parehong transaction.');
+        modalTotalDue.innerText = formatMoney(pendingSale.payload.expectedTotal);
+        cashTenderedInput.value = Number(pendingSale.tenderedAmt).toFixed(2);
+        cashTenderedInput.readOnly = true;
+        modalChangeDue.innerText = formatMoney(pendingSale.changeAmt);
+        btnConfirmCash.innerText = 'Retry Pending Sale';
+        btnConfirmCash.disabled = false;
+        cashModal.querySelectorAll('.quick-btn').forEach(button => { button.disabled = true; });
+        cashModal.classList.add('active');
+        return;
+      }
+      modalTotalDue.innerText = formatMoney(currentTotal);
+      cashTenderedInput.value = "";
+      cashTenderedInput.readOnly = false;
+      modalChangeDue.innerText = "0.00";
+      btnConfirmCash.innerText = 'Complete Sale';
+      btnConfirmCash.disabled = true;
+      cashModal.querySelectorAll('.quick-btn').forEach(button => { button.disabled = false; });
+      
+      cashModal.classList.add('active');
+      setTimeout(() => cashTenderedInput.focus(), 100);
+    }
+
+    function closeCashModal() {
+      cashModal.classList.remove('active');
+      scanInput.focus();
+    }
+
+    document.getElementById('btn-cash-payment').addEventListener('click', openCashModal);
+    document.getElementById('btn-checkout-bottom').addEventListener('click', openCashModal);
+    document.getElementById('cash-modal-close-btn').addEventListener('click', closeCashModal);
+    document.getElementById('btn-cancel-cash').addEventListener('click', closeCashModal);
+
+    cashTenderedInput.addEventListener('input', calculateChange);
+
+    function calculateChange() {
+      const tendered = parseFloat(cashTenderedInput.value) || 0;
+      const change = tendered - currentTotal;
+
+      if (tendered >= currentTotal && currentTotal > 0) {
+        modalChangeDue.innerText = formatMoney(change);
+        btnConfirmCash.disabled = false;
+      } else {
+        modalChangeDue.innerText = "0.00";
+        btnConfirmCash.disabled = true;
+      }
+    }
+
+    function addQuickCash(amount) {
+      cashTenderedInput.value = amount.toFixed(2);
+      calculateChange();
+    }
+
+    document.getElementById('qb-exact').addEventListener('click', () => {
+      cashTenderedInput.value = currentTotal.toFixed(2);
+      calculateChange();
+    });
+
+    btnConfirmCash.addEventListener('click', () => {
+      const tendered = pendingSale
+        ? pendingSale.tenderedAmt
+        : parseFloat(cashTenderedInput.value) || 0;
+      const change = pendingSale
+        ? pendingSale.changeAmt
+        : tendered - currentTotal;
+
+      closeCashModal();
+      finalizeTransaction("CASH", tendered, change, "");
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>POS System</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --blue: #2498dc;
+            --blue-dark: #147fbe;
+            --blue-light: #eaf6fd;
+
+            --green: #20b878;
+            --red: #e95353;
+            --orange: #f3a43b;
+
+            --bg: #eef2f5;
+            --white: #ffffff;
+            --border: #dce2e7;
+
+            --text: #263238;
+            --muted: #77838d;
+
+            --radius: 8px;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        /* =========================================
+           MAIN POS
+        ========================================= */
+
+        .pos {
+            height: 100vh;
+            display: grid;
+
+            grid-template-rows:
+                76px
+                1fr
+                64px;
+        }
+
+        /* =========================================
+           TOP BAR
+        ========================================= */
+
+        .topbar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+
+            display: flex;
+            align-items: center;
+
+            padding: 10px 18px;
+
+            gap: 20px;
+        }
+
+        .brand {
+            width: 190px;
+
+            font-size: 20px;
+            font-weight: 700;
+
+            color: var(--blue);
+        }
+
+        .amount-box {
+            flex: 1;
+
+            height: 56px;
+
+            background: #f5f8fa;
+
+            border: 1px solid var(--border);
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding: 0 22px;
+
+            border-radius: var(--radius);
+        }
+
+        .amount-label {
+            font-size: 13px;
+            font-weight: 700;
+
+            color: var(--muted);
+
+            text-transform: uppercase;
+        }
+
+        .amount-value {
+            font-size: 32px;
+            font-weight: 700;
+
+            color: var(--text);
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .top-button {
+            height: 42px;
+
+            border: 1px solid var(--border);
+
+            background: white;
+
+            padding: 0 14px;
+
+            border-radius: 6px;
+
+            cursor: pointer;
+
+            font-weight: 600;
+        }
+
+        .top-button:hover {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        /* =========================================
+           MAIN CONTENT
+        ========================================= */
+
+        .main {
+            min-height: 0;
+
+            display: grid;
+
+            grid-template-columns:
+                minmax(500px, 1fr)
+                410px;
+
+            gap: 10px;
+
+            padding: 10px;
+        }
+
+        /* =========================================
+           CART
+        ========================================= */
+
+        .cart-panel {
+            min-width: 0;
+
+            background: white;
+
+            border: 1px solid var(--border);
+
+            border-radius: var(--radius);
+
+            display: grid;
+
+            grid-template-rows:
+                62px
+                1fr
+                145px;
+
+            overflow: hidden;
+        }
+
+        .scan-area {
+            padding: 10px;
+
+            border-bottom: 1px solid var(--border);
+
+            display: flex;
+
+            gap: 10px;
+        }
+
+        .barcode-input {
+            flex: 1;
+
+            height: 42px;
+
+            border: 2px solid var(--blue);
+
+            border-radius: 6px;
+
+            padding: 0 14px;
+
+            font-size: 16px;
+
+            outline: none;
+        }
+
+        .barcode-input:focus {
+            box-shadow:
+                0 0 0 3px rgba(36, 152, 220, 0.12);
+        }
+
+        .scan-button {
+            width: 105px;
+
+            border: none;
+
+            background: var(--blue);
+
+            color: white;
+
+            border-radius: 6px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+        }
+
+        .scan-button:hover {
+            background: var(--blue-dark);
+        }
+
+        /* =========================================
+           CART TABLE
+        ========================================= */
+
+        .cart-table-wrapper {
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+
+            border-collapse: collapse;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+
+            background: #f7f9fa;
+
+            z-index: 2;
+        }
+
+        th {
+            text-align: left;
+
+            padding: 12px 14px;
+
+            font-size: 12px;
+
+            text-transform: uppercase;
+
+            color: var(--muted);
+
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 12px 14px;
+
+            border-bottom: 1px solid #edf0f2;
+
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f8fbfd;
+        }
+
+        .product-name {
+            font-weight: 600;
+        }
+
+        .barcode {
+            color: var(--muted);
+
+            font-size: 12px;
+        }
+
+        .qty-control {
+            display: flex;
+            align-items: center;
+
+            gap: 5px;
+        }
+
+        .qty-button {
+            width: 28px;
+            height: 28px;
+
+            border: 1px solid var(--border);
+
+            background: white;
+
+            border-radius: 4px;
+
+            cursor: pointer;
+        }
+
+        .qty-button:hover {
+            background: var(--blue-light);
+        }
+
+        .qty {
+            min-width: 30px;
+
+            text-align: center;
+
+            font-weight: 700;
+        }
+
+        .remove-button {
+            border: none;
+
+            background: transparent;
+
+            color: var(--red);
+
+            cursor: pointer;
+
+            font-size: 18px;
+        }
+
+        /* =========================================
+           CART TOTAL
+        ========================================= */
+
+        .cart-summary {
+            border-top: 1px solid var(--border);
+
+            padding: 16px;
+
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 10px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+
+            font-size: 14px;
+        }
+
+        .summary-total {
+            grid-column: 1 / -1;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            padding-top: 8px;
+
+            border-top: 1px solid var(--border);
+        }
+
+        .total-label {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .total-value {
+            font-size: 28px;
+            font-weight: 700;
+
+            color: var(--blue);
+        }
+
+        /* =========================================
+           RIGHT CONTROL PANEL
+        ========================================= */
+
+        .control-panel {
+            min-height: 0;
+
+            display: grid;
+
+            grid-template-rows:
+                1fr
+                230px;
+
+            gap: 10px;
+        }
+
+        /* =========================================
+           PRODUCT QUICK BUTTONS
+        ========================================= */
+
+        .products-panel {
+            background: white;
+
+            border: 1px solid var(--border);
+
+            border-radius: var(--radius);
+
+            padding: 12px;
+
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 14px;
+
+            font-weight: 700;
+
+            margin-bottom: 10px;
+
+            color: var(--muted);
+
+            text-transform: uppercase;
+        }
+
+        .category-buttons {
+            display: flex;
+
+            gap: 7px;
+
+            overflow-x: auto;
+
+            padding-bottom: 10px;
+        }
+
+        .category {
+            flex-shrink: 0;
+
+            border: 1px solid var(--border);
+
+            background: white;
+
+            padding: 8px 12px;
+
+            border-radius: 20px;
+
+            cursor: pointer;
+
+            font-size: 12px;
+
+            font-weight: 600;
+        }
+
+        .category.active,
+        .category:hover {
+            background: var(--blue);
+
+            color: white;
+
+            border-color: var(--blue);
+        }
+
+        .product-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 8px;
+        }
+
+        .product-button {
+            min-height: 72px;
+
+            background: #f8fafb;
+
+            border: 1px solid var(--border);
+
+            border-radius: 6px;
+
+            padding: 8px;
+
+            cursor: pointer;
+
+            text-align: left;
+        }
+
+        .product-button:hover {
+            border-color: var(--blue);
+
+            background: var(--blue-light);
+        }
+
+        .product-button-name {
+            display: block;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            margin-bottom: 5px;
+        }
+
+        .product-button-price {
+            color: var(--blue);
+
+            font-weight: 700;
+
+            font-size: 13px;
+        }
+
+        /* =========================================
+           KEYPAD / PAYMENT
+        ========================================= */
+
+        .payment-panel {
+            background: white;
+
+            border: 1px solid var(--border);
+
+            border-radius: var(--radius);
+
+            padding: 12px;
+
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 8px;
+        }
+
+        .keypad {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 5px;
+        }
+
+        .key {
+            border: 1px solid var(--border);
+
+            background: #f7f9fa;
+
+            border-radius: 5px;
+
+            font-size: 17px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+        }
+
+        .key:hover {
+            background: var(--blue-light);
+
+            color: var(--blue);
+        }
+
+        .payment-actions {
+            display: grid;
+
+            grid-template-rows:
+                repeat(3, 1fr);
+
+            gap: 5px;
+        }
+
+        .payment-button {
+            border: none;
+
+            border-radius: 6px;
+
+            color: white;
+
+            font-weight: 700;
+
+            cursor: pointer;
+        }
+
+        .cash {
+            background: var(--green);
+        }
+
+        .card {
+            background: var(--blue);
+        }
+
+        .cancel {
+            background: var(--red);
+        }
+
+        .payment-button:hover {
+            opacity: 0.88;
+        }
+
+        /* =========================================
+           FOOTER
+        ========================================= */
+
+        .footer {
+            background: white;
+
+            border-top: 1px solid var(--border);
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 0 18px;
+
+            font-size: 13px;
+
+            color: var(--muted);
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+
+            gap: 7px;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+
+            border-radius: 50%;
+
+            background: var(--green);
+        }
+
+        /* =========================================
+           EMPTY CART
+        ========================================= */
+
+        .empty-cart {
+            height: 100%;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            flex-direction: column;
+
+            color: var(--muted);
+        }
+
+        .empty-cart-icon {
+            font-size: 45px;
+
+            margin-bottom: 10px;
+
+            opacity: 0.35;
+        }
+
+        .empty-cart strong {
+            color: var(--text);
+
+            margin-bottom: 5px;
+        }
+
+        /* =========================================
+           RESPONSIVE
+        ========================================= */
+
+        @media (max-width: 1000px) {
+
+            html,
+            body {
+                overflow: auto;
+            }
+
+            .pos {
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .main {
+                grid-template-columns: 1fr;
+            }
+
+            .control-panel {
+                grid-template-rows: 400px 230px;
+            }
+
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="pos">
+
+    <!-- =====================================
+         TOP BAR
+    ====================================== -->
+
+    <header class="topbar">
+
+        <div class="brand">
+            POS SYSTEM
+        </div>
+
+        <div class="amount-box">
+
+            <span class="amount-label">
+                Amount Due
+            </span>
+
+            <span
+                class="amount-value"
+                id="amountDue"
+            >
+                0.00
+            </span>
+
+        </div>
+
+        <div class="top-actions">
+
+            <button
+                class="top-button"
+                onclick="newSale()"
+            >
+                New Sale
+            </button>
+
+            <button
+                class="top-button"
+                onclick="holdSale()"
+            >
+                Hold
+            </button>
+
+            <button
+                class="top-button"
+                onclick="logout()"
+            >
+                Logout
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================
+         MAIN
+    ====================================== -->
+
+    <main class="main">
+
+
+        <!-- =================================
+             CART
+        ================================== -->
+
+        <section class="cart-panel">
+
+            <!-- BARCODE -->
+
+            <div class="scan-area">
+
+                <input
+                    type="text"
+                    id="barcodeInput"
+                    class="barcode-input"
+                    placeholder="Scan barcode or enter barcode..."
+                    autocomplete="off"
+                    autofocus
+                >
+
+                <button
+                    class="scan-button"
+                    onclick="scanBarcode()"
+                >
+                    SCAN
+                </button>
+
+            </div>
+
+
+            <!-- CART TABLE -->
+
+            <div class="cart-table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Product
+                            </th>
+
+                            <th>
+                                Qty
+                            </th>
+
+                            <th>
+                                Price
+                            </th>
+
+                            <th>
+                                Total
+                            </th>
+
+                            <th>
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="cartBody">
+
+                        <tr id="emptyRow">
+
+                            <td colspan="5">
+
+                                <div class="empty-cart">
+
+                                    <div class="empty-cart-icon">
+                                        🛒
+                                    </div>
+
+                                    <strong>
+                                        No items in the sale
+                                    </strong>
+
+                                    <span>
+                                        Scan a barcode or select a product
+                                    </span>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <!-- SUMMARY -->
+
+            <div class="cart-summary">
+
+                <div class="summary-item">
+
+                    <span>
+                        Subtotal
+                    </span>
+
+                    <strong id="subtotal">
+                        0.00
+                    </strong>
+
+                </div>
+
+                <div class="summary-item">
+
+                    <span>
+                        Discount
+                    </span>
+
+                    <strong id="discount">
+                        0.00
+                    </strong>
+
+                </div>
+
+                <div class="summary-item">
+
+                    <span>
+                        Tax
+                    </span>
+
+                    <strong id="tax">
+                        0.00
+                    </strong>
+
+                </div>
+
+                <div class="summary-item">
+
+                    <span>
+                        Items
+                    </span>
+
+                    <strong id="itemCount">
+                        0
+                    </strong>
+
+                </div>
+
+                <div class="summary-total">
+
+                    <span class="total-label">
+                        TOTAL
+                    </span>
+
+                    <span
+                        class="total-value"
+                        id="total"
+                    >
+                        0.00
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================
+             RIGHT SIDE
+        ================================== -->
+
+        <section class="control-panel">
+
+
+            <!-- PRODUCT BUTTONS -->
+
+            <div class="products-panel">
+
+                <div class="panel-title">
+                    Quick Products
+                </div>
+
+
+                <div class="category-buttons">
+
+                    <button
+                        class="category active"
+                        onclick="filterCategory('all', this)"
+                    >
+                        All
+                    </button>
+
+                    <button
+                        class="category"
+                        onclick="filterCategory('food', this)"
+                    >
+                        Food
+                    </button>
+
+                    <button
+                        class="category"
+                        onclick="filterCategory('drinks', this)"
+                    >
+                        Drinks
+                    </button>
+
+                    <button
+                        class="category"
+                        onclick="filterCategory('grocery', this)"
+                    >
+                        Grocery
+                    </button>
+
+                </div>
+
+
+                <div
+                    class="product-grid"
+                    id="productGrid"
+                >
+
+                </div>
+
+            </div>
+
+
+            <!-- KEYPAD -->
+
+            <div class="payment-panel">
+
+                <div class="keypad">
+
+                    <button class="key" onclick="keypad('7')">
+                        7
+                    </button>
+
+                    <button class="key" onclick="keypad('8')">
+                        8
+                    </button>
+
+                    <button class="key" onclick="keypad('9')">
+                        9
+                    </button>
+
+                    <button class="key" onclick="keypad('4')">
+                        4
+                    </button>
+
+                    <button class="key" onclick="keypad('5')">
+                        5
+                    </button>
+
+                    <button class="key" onclick="keypad('6')">
+                        6
+                    </button>
+
+                    <button class="key" onclick="keypad('1')">
+                        1
+                    </button>
+
+                    <button class="key" onclick="keypad('2')">
+                        2
+                    </button>
+
+                    <button class="key" onclick="keypad('3')">
+                        3
+                    </button>
+
+                    <button class="key" onclick="keypad('0')">
+                        0
+                    </button>
+
+                    <button class="key" onclick="keypad('.')">
+                        .
+                    </button>
+
+                    <button class="key" onclick="clearKeypad()">
+                        C
+                    </button>
+
+                </div>
+
+
+                <div class="payment-actions">
+
+                    <button
+                        class="payment-button cash"
+                        onclick="payment('cash')"
+                    >
+                        CASH
+                    </button>
+
+                    <button
+                        class="payment-button card"
+                        onclick="payment('card')"
+                    >
+                        CARD
+                    </button>
+
+                    <button
+                        class="payment-button cancel"
+                        onclick="cancelSale()"
+                    >
+                        CANCEL
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================
+         FOOTER
+    ====================================== -->
+
+    <footer class="footer">
+
+        <div class="status">
+
+            <span class="status-dot"></span>
+
+            Scanner Ready
+
+        </div>
+
+        <div>
+            Cashier: <strong>Demo User</strong>
+        </div>
+
+        <div>
+            Register #01
+        </div>
+
+    </footer>
+
+</div>
+
+
+<script>
+
+    /* =====================================================
+       TEMPORARY PRODUCT DATABASE
+
+       Later this will come from MySQL/database/API.
+    ===================================================== */
+
+    const products = [
+
+        {
+            id: 1,
+            barcode: "100001",
+            name: "Sample Product 1",
+            price: 50.00,
+            category: "grocery"
+        },
+
+        {
+            id: 2,
+            barcode: "100002",
+            name: "Sample Product 2",
+            price: 75.00,
+            category: "grocery"
+        },
+
+        {
+            id: 3,
+            barcode: "100003",
+            name: "Sample Product 3",
+            price: 35.00,
+            category: "food"
+        },
+
+        {
+            id: 4,
+            barcode: "100004",
+            name: "Sample Product 4",
+            price: 45.00,
+            category: "food"
+        },
+
+        {
+            id: 5,
+            barcode: "100005",
+            name: "Sample Drink",
+            price: 30.00,
+            category: "drinks"
+        },
+
+        {
+            id: 6,
+            barcode: "100006",
+            name: "Sample Coffee",
+            price: 55.00,
+            category: "drinks"
+        }
+
+    ];
+
+
+    /* =====================================================
+       CART
+    ===================================================== */
+
+    let cart = [];
+
+
+    /* =====================================================
+       DISPLAY PRODUCTS
+    ===================================================== */
+
+    function displayProducts(category = "all") {
+
+        const grid =
+            document.getElementById("productGrid");
+
+        grid.innerHTML = "";
+
+
+        const filtered =
+            category === "all"
+                ? products
+                : products.filter(
+                    product =>
+                        product.category === category
+                );
+
+
+        filtered.forEach(product => {
+
+            const button =
+                document.createElement("button");
+
+            button.className =
+                "product-button";
+
+            button.innerHTML = `
+
+                <span class="product-button-name">
+                    ${product.name}
+                </span>
+
+                <span class="product-button-price">
+                    ${formatMoney(product.price)}
+                </span>
+
+            `;
+
+            button.onclick =
+                () => addProduct(product);
+
+            grid.appendChild(button);
+
+        });
+
+    }
+
+
+    /* =====================================================
+       CATEGORY FILTER
+    ===================================================== */
+
+    function filterCategory(category, button) {
+
+        document
+            .querySelectorAll(".category")
+            .forEach(btn => {
+
+                btn.classList.remove("active");
+
+            });
+
+        button.classList.add("active");
+
+        displayProducts(category);
+
+    }
+
+
+    /* =====================================================
+       ADD PRODUCT
+    ===================================================== */
+
+    function addProduct(product) {
+
+        const existing =
+            cart.find(
+                item =>
+                    item.product.id === product.id
+            );
+
+
+        if (existing) {
+
+            existing.quantity++;
+
+        } else {
+
+            cart.push({
+
+                product: product,
+
+                quantity: 1
+
+            });
+
+        }
+
+
+        renderCart();
+
+    }
+
+
+    /* =====================================================
+       BARCODE SCANNER
+    ===================================================== */
+
+    const barcodeInput =
+        document.getElementById("barcodeInput");
+
+
+    barcodeInput.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key !== "Enter") {
+                return;
+            }
+
+            event.preventDefault();
+
+            scanBarcode();
+
+        }
+    );
+
+
+    function scanBarcode() {
+
+        const barcode =
+            barcodeInput.value.trim();
+
+
+        if (!barcode) {
+
+            barcodeInput.focus();
+
+            return;
+
+        }
+
+
+        const product =
+            products.find(
+                item =>
+                    item.barcode === barcode
+            );
+
+
+        if (!product) {
+
+            alert(
+                "Product not found.\n\nBarcode: " +
+                barcode
+            );
+
+            barcodeInput.select();
+
+            return;
+
+        }
+
+
+        addProduct(product);
+
+
+        barcodeInput.value = "";
+
+        barcodeInput.focus();
+
+    }
+
+
+    /* =====================================================
+       RENDER CART
+    ===================================================== */
+
+    function renderCart() {
+
+        const body =
+            document.getElementById("cartBody");
+
+
+        body.innerHTML = "";
+
+
+        if (cart.length === 0) {
+
+            body.innerHTML = `
+
+                <tr>
+
+                    <td colspan="5">
+
+                        <div class="empty-cart">
+
+                            <div class="empty-cart-icon">
+                                🛒
+                            </div>
+
+                            <strong>
+                                No items in the sale
+                            </strong>
+
+                            <span>
+                                Scan a barcode or select a product
+                            </span>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            updateTotals();
+
+            return;
+
+        }
+
+
+        cart.forEach((item, index) => {
+
+            const row =
+                document.createElement("tr");
+
+
+            const product =
+                item.product;
+
+
+            const lineTotal =
+                product.price *
+                item.quantity;
+
+
+            row.innerHTML = `
+
+                <td>
+
+                    <div class="product-name">
+                        ${product.name}
+                    </div>
+
+                    <div class="barcode">
+                        ${product.barcode}
+                    </div>
+
+                </td>
+
+
+                <td>
+
+                    <div class="qty-control">
+
+                        <button
+                            class="qty-button"
+                            onclick="changeQuantity(${index}, -1)"
+                        >
+                            −
+                        </button>
+
+                        <span class="qty">
+                            ${item.quantity}
+                        </span>
+
+                        <button
+                            class="qty-button"
+                            onclick="changeQuantity(${index}, 1)"
+                        >
+                            +
+                        </button>
+
+                    </div>
+
+                </td>
+
+
+                <td>
+                    ${formatMoney(product.price)}
+                </td>
+
+
+                <td>
+                    <strong>
+                        ${formatMoney(lineTotal)}
+                    </strong>
+                </td>
+
+
+                <td>
+
+                    <button
+                        class="remove-button"
+                        onclick="removeItem(${index})"
+                    >
+                        ×
+                    </button>
+
+                </td>
+
+            `;
+
+
+            body.appendChild(row);
+
+        });
+
+
+        updateTotals();
+
+    }
+
+
+    /* =====================================================
+       QUANTITY
+    ===================================================== */
+
+    function changeQuantity(index, change) {
+
+        cart[index].quantity += change;
+
+
+        if (cart[index].quantity <= 0) {
+
+            cart.splice(index, 1);
+
+        }
+
+
+        renderCart();
+
+    }
+
+
+    /* =====================================================
+       REMOVE
+    ===================================================== */
+
+    function removeItem(index) {
+
+        cart.splice(index, 1);
+
+        renderCart();
+
+    }
+
+
+    /* =====================================================
+       TOTALS
+    ===================================================== */
+
+    function updateTotals() {
+
+        const subtotal =
+            cart.reduce(
+                (sum, item) =>
+                    sum +
+                    item.product.price *
+                    item.quantity,
+
+                0
+            );
+
+
+        const discount = 0;
+
+        const tax = 0;
+
+        const total =
+            subtotal -
+            discount +
+            tax;
+
+
+        const itemCount =
+            cart.reduce(
+                (sum, item) =>
+                    sum + item.quantity,
+
+                0
+            );
+
+
+        document
+            .getElementById("subtotal")
+            .textContent =
+            formatMoney(subtotal);
+
+
+        document
+            .getElementById("discount")
+            .textContent =
+            formatMoney(discount);
+
+
+        document
+            .getElementById("tax")
+            .textContent =
+            formatMoney(tax);
+
+
+        document
+            .getElementById("total")
+            .textContent =
+            formatMoney(total);
+
+
+        document
+            .getElementById("amountDue")
+            .textContent =
+            formatMoney(total);
+
+
+        document
+            .getElementById("itemCount")
+            .textContent =
+            itemCount;
+
+    }
+
+
+    /* =====================================================
+       MONEY
+    ===================================================== */
+
+    function formatMoney(value) {
+
+        return value.toLocaleString(
+            "en-PH",
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       KEYPAD
+    ===================================================== */
+
+    let keypadValue = "";
+
+
+    function keypad(value) {
+
+        keypadValue += value;
+
+        console.log(
+            "Keypad:",
+            keypadValue
+        );
+
+    }
+
+
+    function clearKeypad() {
+
+        keypadValue = "";
+
+    }
+
+
+    /* =====================================================
+       PAYMENT
+    ===================================================== */
+
+    function payment(type) {
+
+        if (cart.length === 0) {
+
+            alert(
+                "There are no items in the sale."
+            );
+
+            return;
+
+        }
+
+
+        const total =
+            cart.reduce(
+                (sum, item) =>
+                    sum +
+                    item.product.price *
+                    item.quantity,
+
+                0
+            );
+
+
+        if (type === "cash") {
+
+            const amount =
+                prompt(
+                    "Amount received:\n\n" +
+                    formatMoney(total)
+                );
+
+
+            if (amount === null) {
+                return;
+            }
+
+
+            const received =
+                parseFloat(amount);
+
+
+            if (
+                isNaN(received) ||
+                received < total
+            ) {
+
+                alert(
+                    "Insufficient payment."
+                );
+
+                return;
+
+            }
+
+
+            const change =
+                received - total;
+
+
+            alert(
+                "Payment successful!\n\n" +
+                "Total: " +
+                formatMoney(total) +
+                "\nReceived: " +
+                formatMoney(received) +
+                "\nChange: " +
+                formatMoney(change)
+            );
+
+
+            newSale();
+
+        }
+
+
+        if (type === "card") {
+
+            alert(
+                "Card payment selected.\n\n" +
+                "Payment terminal integration will be connected later."
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       NEW SALE
+    ===================================================== */
+
+    function newSale() {
+
+        cart = [];
+
+        renderCart();
+
+        barcodeInput.value = "";
+
+        barcodeInput.focus();
+
+    }
+
+
+    /* =====================================================
+       CANCEL
+    ===================================================== */
+
+    function cancelSale() {
+
+        if (cart.length === 0) {
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                "Cancel this sale?"
+            );
+
+
+        if (confirmed) {
+
+            newSale();
+
+        }
+
+    }
+
+
+    /* =====================================================
+       HOLD SALE
+    ===================================================== */
+
+    function holdSale() {
+
+        if (cart.length === 0) {
+
+            alert(
+                "There is no sale to hold."
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            "Sale held.\n\n" +
+            "Hold-sale database functionality will be connected later."
+        );
+
+    }
+
+
+    /* =====================================================
+       LOGOUT
+    ===================================================== */
+
+    function logout() {
+
+        const confirmed =
+            confirm(
+                "Are you sure you want to logout?"
+            );
+
+
+        if (confirmed) {
+
+            alert(
+                "Logout will redirect to the login screen once authentication is connected."
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       START POS
+    ===================================================== */
+
+    displayProducts();
+
+    renderCart();
+
+    barcodeInput.focus();
+
+</script>
+
+</body>
+</html>

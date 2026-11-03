@@ -1,0 +1,68 @@
+{
+  "name": "general-pos",
+  "version": "1.0.0",
+  "description": "A local desktop point-of-sale system powered by SQLite.",
+  "main": "electron/main.js",
+  "scripts": {
+    "test": "node --test",
+    "start": "node server.js",
+    "desktop:start": "electron .",
+    "desktop:dist": "electron-builder --win nsis",
+    "cloud:start": "node cloud/server.js",
+    "cloud:test": "node --test cloud/test/*.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.11.4",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "electron": "^45.2.1",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.generalpos.desktop",
+    "productName": "General POS",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "public/**/*",
+      "src/**/*",
+      "server.js",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/sqlite3/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.0": true,
+    "sqlite3@6.0.1": true,
+    "electron@45.2.1": true
+  }
+}

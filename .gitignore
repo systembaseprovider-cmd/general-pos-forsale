@@ -1,0 +1,9 @@
+.env
+.pos-server.lock
+backups/
+*.before-restore-*.db
+node_modules/
+dist/
+release/
+pos.db
+pos.pre-phase1-backup-*.db

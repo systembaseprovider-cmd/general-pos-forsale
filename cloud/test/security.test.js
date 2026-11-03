@@ -1,0 +1,5 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { hashSecret, createActivationCode, safeEqual, createDeviceToken, readDeviceToken } = require('../src/security');
+test('activation codes are opaque, unique, and hash deterministically', () => { const first = createActivationCode(); const second = createActivationCode(); assert.notEqual(first, second); assert.equal(first.length >= 20, true); assert.equal(hashSecret(first), hashSecret(first)); assert.equal(safeEqual(first, first), true); assert.equal(safeEqual(first, second), false); });
+test('device lease is scoped and verifiable', () => { const secret = 'a-secure-test-secret-that-is-at-least-32-characters'; const token = createDeviceToken({ _id: '507f1f77bcf86cd799439011', activationVersion: 1, organizationId: 'org-a', storeId: 'store-a' }, secret, 7); const claims = readDeviceToken(token, secret); assert.equal(claims.kind, 'pos-device'); assert.equal(claims.organizationId, 'org-a'); assert.equal(claims.storeId, 'store-a'); });

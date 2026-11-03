@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ================================
+         SYSTEM CONFIGURATION
+         Fill these in later
+    ================================= -->
+    <title>POS System</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Main colors - can be changed later */
+            --primary-blue: #43a4df;
+            --primary-blue-dark: #3595d0;
+            --button-blue: #8fb1c9;
+
+            --background: #f7f8fa;
+            --white: #ffffff;
+            --text-dark: #182033;
+            --text-gray: #70788c;
+            --border: #e1e5eb;
+
+            --radius: 13px;
+        }
+
+        body {
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Roboto,
+                Arial,
+                sans-serif;
+
+            min-height: 100vh;
+            background: var(--background);
+            color: var(--text-dark);
+        }
+
+        /* ==================================
+           MAIN LOGIN CONTAINER
+        ================================== */
+
+        .login-container {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        /* ==================================
+           LEFT BRANDING PANEL
+        ================================== */
+
+        .branding-panel {
+            position: relative;
+            overflow: hidden;
+
+            background:
+                radial-gradient(
+                    circle at 80% 70%,
+                    rgba(255, 255, 255, 0.08),
+                    transparent 35%
+                ),
+                linear-gradient(
+                    135deg,
+                    var(--primary-blue),
+                    var(--primary-blue-dark)
+                );
+
+            color: white;
+            padding: 60px 55px;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* subtle decorative circle */
+
+        .branding-panel::after {
+            content: "";
+            position: absolute;
+
+            width: 500px;
+            height: 500px;
+
+            right: -220px;
+            bottom: -220px;
+
+            border-radius: 50%;
+
+            background: rgba(255, 255, 255, 0.035);
+        }
+
+        /* ==================================
+           BRAND HEADER
+        ================================== */
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+
+            position: relative;
+            z-index: 2;
+        }
+
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+
+            border-radius: 12px;
+
+            background: rgba(0, 0, 0, 0.85);
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            overflow: hidden;
+        }
+
+        /*
+           Replace this with your actual logo later:
+
+           <img src="logo.png" alt="Logo">
+        */
+
+        .brand-logo span {
+            color: white;
+            font-size: 12px;
+            font-weight: 800;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+        }
+
+        /* ==================================
+           BRAND CONTENT
+        ================================== */
+
+        .branding-content {
+            position: relative;
+            z-index: 2;
+
+            max-width: 570px;
+
+            margin-top: -50px;
+        }
+
+        .branding-title {
+            font-size: clamp(40px, 4vw, 58px);
+            line-height: 1.03;
+            letter-spacing: -2.5px;
+
+            font-weight: 700;
+
+            margin-bottom: 22px;
+        }
+
+        .branding-title .light {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        .branding-description {
+            font-size: 18px;
+            line-height: 1.55;
+
+            color: rgba(255, 255, 255, 0.85);
+
+            max-width: 570px;
+
+            margin-bottom: 32px;
+        }
+
+        /* ==================================
+           FEATURE TAGS
+        ================================== */
+
+        .feature-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .feature {
+            border: 1px solid rgba(255, 255, 255, 0.25);
+
+            background: rgba(255, 255, 255, 0.08);
+
+            padding: 7px 14px;
+
+            border-radius: 20px;
+
+            font-size: 14px;
+            font-weight: 600;
+
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* ==================================
+           BRAND FOOTER
+        ================================== */
+
+        .branding-footer {
+            position: relative;
+            z-index: 2;
+
+            display: flex;
+            align-items: center;
+            gap: 9px;
+
+            color: rgba(255, 255, 255, 0.65);
+
+            font-size: 14px;
+        }
+
+        .security-icon {
+            width: 16px;
+            height: 16px;
+
+            border: 1.5px solid rgba(255, 255, 255, 0.6);
+
+            border-radius: 5px;
+
+            position: relative;
+        }
+
+        .security-icon::after {
+            content: "";
+
+            position: absolute;
+
+            width: 4px;
+            height: 6px;
+
+            border-right: 1.5px solid white;
+            border-bottom: 1.5px solid white;
+
+            transform: rotate(45deg);
+
+            left: 4px;
+            top: 3px;
+        }
+
+        /* ==================================
+           RIGHT LOGIN PANEL
+        ================================== */
+
+        .login-panel {
+            background: #f8f9fb;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 40px;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* ==================================
+           LOGIN HEADER
+        ================================== */
+
+        .login-header {
+            margin-bottom: 35px;
+        }
+
+        .login-title {
+            font-size: 29px;
+            line-height: 1.2;
+
+            font-weight: 700;
+
+            letter-spacing: -0.8px;
+
+            margin-bottom: 7px;
+        }
+
+        .login-subtitle {
+            color: var(--text-gray);
+
+            font-size: 16px;
+        }
+
+        /* ==================================
+           FORM
+        ================================== */
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        .form-label {
+            display: block;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            color: #6b7387;
+
+            margin-bottom: 9px;
+
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+
+            height: 50px;
+
+            padding: 0 14px;
+
+            border: 1px solid var(--border);
+
+            border-radius: var(--radius);
+
+            background: white;
+
+            color: var(--text-dark);
+
+            font-size: 15px;
+
+            outline: none;
+
+            transition:
+                border-color 0.2s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .form-input::placeholder {
+            color: #858da0;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-blue);
+
+            box-shadow:
+                0 0 0 3px rgba(67, 164, 223, 0.12);
+        }
+
+        /* ==================================
+           PASSWORD VISIBILITY
+        ================================== */
+
+        .password-input {
+            padding-right: 48px;
+        }
+
+        .toggle-password {
+            position: absolute;
+
+            right: 14px;
+            top: 50%;
+
+            transform: translateY(-50%);
+
+            border: none;
+            background: transparent;
+
+            color: #858da0;
+
+            cursor: pointer;
+
+            font-size: 13px;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary-blue);
+        }
+
+        /* ==================================
+           LOGIN BUTTON
+        ================================== */
+
+        .login-button {
+            width: 100%;
+
+            height: 50px;
+
+            border: none;
+
+            border-radius: var(--radius);
+
+            background: var(--button-blue);
+
+            color: white;
+
+            font-size: 15px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            gap: 12px;
+
+            transition:
+                background 0.2s ease,
+                transform 0.1s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .login-button:hover {
+            background: #7fa5bf;
+
+            box-shadow:
+                0 5px 15px rgba(72, 110, 135, 0.15);
+        }
+
+        .login-button:active {
+            transform: scale(0.99);
+        }
+
+        .login-button:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .arrow {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        /* ==================================
+           ERROR MESSAGE
+        ================================== */
+
+        .error-message {
+            display: none;
+
+            margin-top: 15px;
+
+            padding: 12px 14px;
+
+            border-radius: 9px;
+
+            background: #fff0f0;
+
+            border: 1px solid #ffd2d2;
+
+            color: #c23d3d;
+
+            font-size: 14px;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* ==================================
+           SYSTEM VERSION
+        ================================== */
+
+        .system-version {
+            text-align: center;
+
+            margin-top: 35px;
+
+            color: #7c8497;
+
+            font-size: 13px;
+        }
+
+        /* ==================================
+           RESPONSIVE
+        ================================== */
+
+        @media (max-width: 900px) {
+
+            .login-container {
+                grid-template-columns: 1fr;
+            }
+
+            .branding-panel {
+                min-height: 430px;
+
+                padding: 40px;
+            }
+
+            .branding-content {
+                margin-top: 20px;
+            }
+
+            .branding-title {
+                font-size: 42px;
+            }
+
+            .branding-footer {
+                margin-top: 40px;
+            }
+
+            .login-panel {
+                min-height: 550px;
+            }
+        }
+
+        @media (max-width: 500px) {
+
+            .branding-panel {
+                padding: 30px 25px;
+            }
+
+            .brand-name {
+                font-size: 17px;
+            }
+
+            .branding-title {
+                font-size: 36px;
+                letter-spacing: -1.5px;
+            }
+
+            .branding-description {
+                font-size: 16px;
+            }
+
+            .login-panel {
+                padding: 30px 22px;
+            }
+
+            .login-title {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="login-container">
+
+    <!-- =========================================
+         LEFT SIDE
+    ========================================== -->
+
+    <section class="branding-panel">
+
+        <!-- BRAND HEADER -->
+
+        <div class="brand-header">
+
+            <div class="brand-logo">
+                <span>LOGO</span>
+            </div>
+
+            <div class="brand-name">
+                <!-- SYSTEM NAME -->
+                <!-- Replace later -->
+            </div>
+
+        </div>
+
+
+        <!-- BRANDING CONTENT -->
+
+        <div class="branding-content">
+
+            <h1 class="branding-title">
+                <span>Loyalty,</span>
+                <span class="light"> rewarded</span><br>
+                <span>beautifully.</span>
+            </h1>
+
+            <p class="branding-description">
+                <!-- SYSTEM DESCRIPTION -->
+                <!-- Keep empty until we decide what the POS system does -->
+
+            </p>
+
+
+            <div class="feature-list">
+
+                <!--
+                    Features can be changed later.
+                    These are currently examples.
+                -->
+
+                <div class="feature">POS Sales</div>
+
+                <div class="feature">Inventory</div>
+
+                <div class="feature">Customers</div>
+
+                <div class="feature">Reports</div>
+
+            </div>
+
+        </div>
+
+
+        <!-- FOOTER -->
+
+        <div class="branding-footer">
+
+            <div class="security-icon"></div>
+
+            <span>
+                Secure role-based access
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================================
+         RIGHT SIDE
+    ========================================== -->
+
+    <section class="login-panel">
+
+        <div class="login-box">
+
+            <!-- HEADER -->
+
+            <div class="login-header">
+
+                <h2 class="login-title">
+                    Welcome back
+                </h2>
+
+                <p class="login-subtitle">
+                    Sign in to continue.
+                </p>
+
+            </div>
+
+
+            <!-- LOGIN FORM -->
+
+            <form id="loginForm">
+
+                <!-- USERNAME -->
+
+                <div class="form-group">
+
+                    <label
+                        class="form-label"
+                        for="username"
+                    >
+                        Username
+                    </label>
+
+                    <input
+                        type="text"
+                        id="username"
+                        class="form-input"
+                        placeholder="Enter username"
+                        autocomplete="username"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- PIN / PASSWORD -->
+
+                <div class="form-group">
+
+                    <label
+                        class="form-label"
+                        for="pin"
+                    >
+                        PIN
+                    </label>
+
+                    <div class="input-wrapper">
+
+                        <input
+                            type="password"
+                            id="pin"
+                            class="form-input password-input"
+                            placeholder="Enter PIN"
+                            autocomplete="current-password"
+                            inputmode="numeric"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="toggle-password"
+                            id="togglePassword"
+                        >
+                            Show
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SIGN IN -->
+
+                <button
+                    type="submit"
+                    class="login-button"
+                    id="loginButton"
+                >
+
+                    <span id="loginButtonText">
+                        Sign In
+                    </span>
+
+                    <span class="arrow">
+                        →
+                    </span>
+
+                </button>
+
+
+                <!-- ERROR -->
+
+                <div
+                    class="error-message"
+                    id="errorMessage"
+                >
+                    Please enter your username and PIN.
+                </div>
+
+            </form>
+
+
+            <!-- VERSION -->
+
+            <div class="system-version">
+
+                <!-- SYSTEM VERSION -->
+                <!-- Leave empty until final system name/version -->
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<script>
+
+    async function loadLoginBranding() {
+        try {
+            const response = await fetch("/api/settings/public-branding");
+            const result = await response.json();
+            if (!response.ok || !result.success || !result.data) {
+                throw new Error(result.message || "Unable to load app branding");
+            }
+            const settings = result.data;
+            if (settings.appName) {
+                document.title = settings.appName;
+                document.querySelector(".brand-name").textContent = settings.appName;
+            }
+            if (settings.logoDataUrl) {
+                const logo = document.querySelector(".brand-logo");
+                const image = document.createElement("img");
+                image.src = settings.logoDataUrl;
+                image.alt = `${settings.appName || "Store"} logo`;
+                image.style.cssText = "width:100%;height:100%;object-fit:contain;";
+                logo.replaceChildren(image);
+            }
+        } catch (error) {
+            console.error("Unable to load login branding:", error);
+        }
+    }
+
+    loadLoginBranding();
+
+    /* ==========================================
+       PASSWORD / PIN VISIBILITY
+    ========================================== */
+
+    const pinInput =
+        document.getElementById("pin");
+
+    const togglePassword =
+        document.getElementById("togglePassword");
+
+    togglePassword.addEventListener(
+        "click",
+        function () {
+
+            if (pinInput.type === "password") {
+
+                pinInput.type = "text";
+
+                togglePassword.textContent = "Hide";
+
+            } else {
+
+                pinInput.type = "password";
+
+                togglePassword.textContent = "Show";
+            }
+
+        }
+    );
+
+
+    /* ==========================================
+       LOGIN FORM
+    ========================================== */
+
+    const loginForm =
+        document.getElementById("loginForm");
+
+    const loginButton =
+        document.getElementById("loginButton");
+
+    const loginButtonText =
+        document.getElementById("loginButtonText");
+
+    const errorMessage =
+        document.getElementById("errorMessage");
+
+
+    loginForm.addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
+
+            const username =
+                document.getElementById("username")
+                    .value
+                    .trim();
+
+            const pin =
+                document.getElementById("pin")
+                    .value
+                    .trim();
+
+
+            /* Basic validation */
+
+            if (!username || !pin) {
+
+                errorMessage.textContent =
+                    "Please enter your username and PIN.";
+
+                errorMessage.classList.add("show");
+
+                return;
+            }
+
+
+            errorMessage.classList.remove("show");
+
+            loginButton.disabled = true;
+
+            loginButtonText.textContent =
+                "Signing in...";
+
+
+            try {
+                /* AUTHENTICATE WITH BACKEND API */
+
+                const response = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        pin: pin
+                    })
+                });
+
+                const data = await response.json();
+
+
+                if (data.success) {
+                    /* LOGIN SUCCESSFUL */
+
+                    // Store token in localStorage
+                    localStorage.setItem("authToken", data.token);
+                    localStorage.setItem("currentUser", JSON.stringify(data.user));
+
+                    // Redirect to POS dashboard
+                    window.location.href = "/pos.html";
+
+                } else {
+                    /* LOGIN FAILED */
+
+                    errorMessage.textContent =
+                        data.message || "Invalid username or PIN.";
+
+                    errorMessage.classList.add("show");
+
+                    loginButton.disabled = false;
+
+                    loginButtonText.textContent =
+                        "Sign In";
+                }
+
+            } catch (error) {
+                console.error("Login error:", error);
+
+                errorMessage.textContent =
+                    "Connection error. Please try again.";
+
+                errorMessage.classList.add("show");
+
+                loginButton.disabled = false;
+
+                loginButtonText.textContent =
+                    "Sign In";
+            }
+
+        }
+    );
+
+
+    /* ==========================================
+       REMOVE ERROR WHEN USER STARTS TYPING
+    ========================================== */
+
+    document
+        .getElementById("username")
+        .addEventListener(
+            "input",
+            function () {
+
+                errorMessage.classList.remove("show");
+
+            }
+        );
+
+
+    pinInput.addEventListener(
+        "input",
+        function () {
+
+            errorMessage.classList.remove("show");
+
+        }
+    );
+
+</script>
+
+</body>
+</html>
