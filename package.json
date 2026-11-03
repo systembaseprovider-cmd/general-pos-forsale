@@ -1,6 +1,6 @@
 {
   "name": "general-pos",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A local desktop point-of-sale system powered by SQLite.",
   "main": "electron/main.js",
   "scripts": {
@@ -56,6 +56,7 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     }

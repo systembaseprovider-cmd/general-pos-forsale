@@ -254,13 +254,20 @@
 
     /* ================= RIGHT PANEL ================= */
     .right-panel {
+      flex: 0 0 420px;
       width: 420px;
+      min-height: 0;
       background-color: var(--panel-right-bg);
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
       padding: 12px;
       gap: 10px;
       border-left: 1px solid #7dd3fc;
+    }
+
+    .right-panel > * {
+      flex-shrink: 0;
     }
 
     .header-top-bar {
@@ -363,12 +370,14 @@
 
     .action-grid {
       display: grid;
+      flex: 0 0 auto;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       align-content: start;
     }
 
     .btn {
+      flex: 0 0 75px;
       border: 1px solid rgba(255, 255, 255, 0.4);
       border-radius: 8px;
       display: flex;

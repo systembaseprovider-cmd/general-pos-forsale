@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, screen } = require('electron');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -97,11 +97,12 @@ async function startDesktopApp() {
             return;
         }
 
+        const { width: workAreaWidth, height: workAreaHeight } = screen.getPrimaryDisplay().workAreaSize;
         mainWindow = new BrowserWindow({
-            width: 1440,
-            height: 900,
-            minWidth: 1024,
-            minHeight: 700,
+            width: Math.min(1440, workAreaWidth),
+            height: Math.min(900, workAreaHeight),
+            minWidth: Math.min(1024, workAreaWidth),
+            minHeight: Math.min(700, workAreaHeight),
             show: false,
             webPreferences: {
                 contextIsolation: true,
@@ -117,7 +118,10 @@ async function startDesktopApp() {
                 event.preventDefault();
             }
         });
-        mainWindow.once('ready-to-show', () => mainWindow.show());
+        mainWindow.once('ready-to-show', () => {
+            mainWindow.maximize();
+            mainWindow.show();
+        });
         mainWindow.loadURL(`http://127.0.0.1:${address.port}/`);
         db.ready.then(showFirstRunCredentials).catch(error => {
             console.error('Unable to verify first-run administrator setup:', error);
