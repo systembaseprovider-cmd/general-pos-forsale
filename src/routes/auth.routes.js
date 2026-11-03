@@ -108,6 +108,12 @@ router.post('/change-password', verifyToken, async (req, res) => {
                 message: 'Current and new password/PIN are required'
             });
         }
+        if (newPin.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message: 'New password/PIN must be at least 8 characters'
+            });
+        }
 
         const user = await User.findByUsername(req.user.username);
         if (!user || !User.verifyPassword(currentPin, user.password)) {

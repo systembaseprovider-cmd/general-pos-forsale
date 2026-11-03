@@ -1535,6 +1535,37 @@
 
   </div>
 
+  <!-- CHANGE PASSWORD MODAL -->
+  <div class="modal-overlay" id="change-password-modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
+      <div class="modal-header">
+        <span id="change-password-title"><i class="fa-solid fa-key"></i> Change Password</span>
+        <button type="button" class="modal-close" id="change-password-close" aria-label="Close">&times;</button>
+      </div>
+      <form id="change-password-form">
+        <div class="modal-body">
+          <label class="settings-field" for="current-password-input">
+            Current password
+            <input id="current-password-input" type="password" autocomplete="current-password" required>
+          </label>
+          <label class="settings-field" for="new-password-input">
+            New password (at least 8 characters)
+            <input id="new-password-input" type="password" minlength="8" autocomplete="new-password" required>
+          </label>
+          <label class="settings-field" for="confirm-password-input">
+            Confirm new password
+            <input id="confirm-password-input" type="password" minlength="8" autocomplete="new-password" required>
+          </label>
+          <p id="change-password-message" role="status" aria-live="polite"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-cancel" id="change-password-cancel">Cancel</button>
+          <button type="submit" class="modal-btn modal-btn-confirm" id="change-password-submit">Change Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 1. CASH PAYMENT MODAL -->
   <div class="modal-overlay" id="cash-modal">
     <div class="modal-card">
@@ -2352,18 +2383,48 @@
       }
     }
     document.getElementById('btn-logout').addEventListener('click', logout);
-    document.getElementById('btn-change-pin').addEventListener('click', async () => {
-      const currentPin = prompt('Ilagay ang kasalukuyang password/PIN:');
-      if (currentPin === null) return;
-      const newPin = prompt('Ilagay ang bagong password/PIN (8 character minimum):');
-      if (newPin === null) return;
-      const confirmation = prompt('Ilagay muli ang bagong password/PIN:');
-      if (confirmation === null) return;
-      if (newPin.length < 8 || newPin !== confirmation) {
-        alert('Dapat magkapareho ang bagong password/PIN at hindi bababa sa 8 character.');
+    const changePasswordModal = document.getElementById('change-password-modal');
+    const changePasswordForm = document.getElementById('change-password-form');
+    const changePasswordMessage = document.getElementById('change-password-message');
+    const changePasswordSubmit = document.getElementById('change-password-submit');
+    const currentPasswordInput = document.getElementById('current-password-input');
+    const newPasswordInput = document.getElementById('new-password-input');
+    const confirmPasswordInput = document.getElementById('confirm-password-input');
+
+    function closeChangePasswordModal() {
+      changePasswordModal.classList.remove('active');
+      changePasswordModal.setAttribute('aria-hidden', 'true');
+      changePasswordForm.reset();
+      changePasswordMessage.textContent = '';
+    }
+
+    document.getElementById('btn-change-pin').addEventListener('click', () => {
+      changePasswordMessage.textContent = '';
+      changePasswordModal.classList.add('active');
+      changePasswordModal.setAttribute('aria-hidden', 'false');
+      currentPasswordInput.focus();
+    });
+    document.getElementById('change-password-close').addEventListener('click', closeChangePasswordModal);
+    document.getElementById('change-password-cancel').addEventListener('click', closeChangePasswordModal);
+    changePasswordModal.addEventListener('click', event => {
+      if (event.target === changePasswordModal) closeChangePasswordModal();
+    });
+    changePasswordForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      changePasswordMessage.textContent = '';
+      if (newPasswordInput.value.length < 8) {
+        changePasswordMessage.textContent = 'Dapat hindi bababa sa 8 character ang bagong password.';
+        newPasswordInput.focus();
+        return;
+      }
+      if (newPasswordInput.value !== confirmPasswordInput.value) {
+        changePasswordMessage.textContent = 'Hindi magkapareho ang bagong password at confirmation.';
+        confirmPasswordInput.focus();
         return;
       }
 
+      changePasswordSubmit.disabled = true;
+      changePasswordSubmit.textContent = 'Saving...';
       try {
         const response = await fetch('/api/auth/change-password', {
           method: 'POST',
@@ -2371,19 +2432,27 @@
             'Content-Type': 'application/json',
             'Authorization': `******`
           },
-          body: JSON.stringify({ currentPin, newPin })
+          body: JSON.stringify({
+            currentPin: currentPasswordInput.value,
+            newPin: newPasswordInput.value
+          })
         });
         const data = await response.json();
         if (!response.ok || !data.success) {
           throw new Error(data.message || 'Hindi nabago ang password/PIN.');
         }
-        alert('Nabago ang password/PIN. Mag-sign in muli gamit ang bagong credential.');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
+        changePasswordMessage.textContent = 'Nabago ang password. Mag-sign in muli gamit ang bagong password.';
+        setTimeout(() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('currentUser');
+          window.location.href = '/index.html';
+        }, 1200);
       } catch (error) {
         console.error('Password/PIN change failed:', error);
-        alert(error.message);
+        changePasswordMessage.textContent = error.message;
+      } finally {
+        changePasswordSubmit.disabled = false;
+        changePasswordSubmit.textContent = 'Change Password';
       }
     });
 

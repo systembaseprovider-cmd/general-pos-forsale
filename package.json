@@ -1,6 +1,6 @@
 {
   "name": "general-pos",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A local desktop point-of-sale system powered by SQLite.",
   "main": "electron/main.js",
   "scripts": {
