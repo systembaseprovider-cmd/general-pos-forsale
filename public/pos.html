@@ -2267,6 +2267,7 @@
   <!-- DYNAMIC THERMAL RECEIPT CONTAINER FOR PRINTING -->
   <div id="thermal-receipt-area"></div>
 
+  <script src="/cart-draft.js"></script>
   <!-- JAVASCRIPT LOGIC -->
   <script>
     // ========================================
@@ -2282,6 +2283,24 @@
       : { ...cashierModuleDefaults, ...(currentUser?.modulePermissions || {}) };
     const canAccessModule = module => currentUser?.role === 'admin' || currentModulePermissions[module] === true;
     const pendingSaleKey = currentUser ? `posPendingSale:${currentUser.id}` : null;
+    const cartDraftKey = currentUser ? `posCartDraft:${currentUser.id}` : null;
+    let restoredCartDraft = null;
+    let cartDraftRecoveryError = false;
+    let cartDraftStorageWarningShown = false;
+    if (cartDraftKey) {
+      try {
+        restoredCartDraft = POSCartDraft.readCartDraft(
+          localStorage,
+          cartDraftKey,
+          currentUser.id,
+          currentUser.branch
+        );
+      } catch (error) {
+        cartDraftRecoveryError = true;
+        console.error('Unable to restore cart draft:', error);
+        alert('Hindi maibalik ang naka-save na cart draft. Hindi binura ang recovery data; humingi ng tulong sa admin bago magpatuloy.');
+      }
+    }
     let pendingSale = null;
     let pendingSaleRecoveryError = false;
     if (pendingSaleKey) {
@@ -2437,13 +2456,19 @@
     loadNextTxnNumber();
 
     // 3. CART & PRODUCTS STATE
-    let cart = pendingSale ? pendingSale.cart : [];
+    let cart = pendingSale ? pendingSale.cart : restoredCartDraft ? restoredCartDraft.cart : [];
     let selectedCartIndex = null;
     let currentTotal = 0.00;
-    let appliedDiscount = pendingSale ? Number(pendingSale.discountAmount) || 0 : 0.00;
-    let appliedDiscountReason = pendingSale ? String(pendingSale.discountReason || '') : '';
-    let appliedDiscountType = pendingSale ? String(pendingSale.discountType || '') : '';
-    let heldOrders = [];
+    let appliedDiscount = pendingSale
+      ? Number(pendingSale.discountAmount) || 0
+      : restoredCartDraft ? restoredCartDraft.discountAmount : 0.00;
+    let appliedDiscountReason = pendingSale
+      ? String(pendingSale.discountReason || '')
+      : restoredCartDraft ? restoredCartDraft.discountReason : '';
+    let appliedDiscountType = pendingSale
+      ? String(pendingSale.discountType || '')
+      : restoredCartDraft ? restoredCartDraft.discountType : '';
+    let heldOrders = restoredCartDraft ? restoredCartDraft.heldOrders : [];
     let isProductDashboardActive = false;
     let productDashboardSearch = '';
     let productDashboardCategory = 'All';
@@ -2470,6 +2495,7 @@
     const cartVatable = document.getElementById('cart-vatable');
     const cartVat = document.getElementById('cart-vat');
     const accountInput = document.getElementById('account-input');
+    if (!pendingSale && restoredCartDraft) accountInput.value = restoredCartDraft.account;
     const itemTableHeader = document.getElementById('item-table-header');
     const productDashboardButton = document.getElementById('btn-product-dashboard');
     if (pendingSale) {
@@ -2725,6 +2751,27 @@
 
     // 5. RENDER CART LIST & COMPUTE TOTALS
     function renderCart() {
+      if (cartDraftKey && !pendingSale && !pendingSaleRecoveryError && !cartDraftRecoveryError) {
+        try {
+          POSCartDraft.saveCartDraft(localStorage, cartDraftKey, {
+            userId: currentUser.id,
+            branch: currentUser.branch,
+            cart,
+            discountAmount: appliedDiscount,
+            discountReason: appliedDiscountReason,
+            discountType: appliedDiscountType,
+            heldOrders,
+            account: accountInput.value
+          });
+          cartDraftStorageWarningShown = false;
+        } catch (error) {
+          console.error('Unable to save cart draft:', error);
+          if (!cartDraftStorageWarningShown) {
+            cartDraftStorageWarningShown = true;
+            alert(`Hindi ma-save ang cart draft para ma-recover sa refresh. Huwag i-refresh o isara ang POS hanggang malutas ito.\n\n${error.message}`);
+          }
+        }
+      }
       cartList.innerHTML = "";
       const itemsSum = getCartItemsTotal();
       updateCartTotals(itemsSum);
@@ -4055,6 +4102,7 @@
       if (confirm("Sigurado ka bang gustong idelete ang held transaction na ito?")) {
         heldOrders = heldOrders.filter(o => o.id !== id);
         updateHeldBadge();
+        renderCart();
         renderHeldOrdersList();
       }
     };
