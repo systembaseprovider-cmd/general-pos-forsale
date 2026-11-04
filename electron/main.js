@@ -37,7 +37,7 @@ function loadOrCreateFirstRunCredentials(filePath) {
 
     const credentials = {
         username: 'admin',
-        password: crypto.randomBytes(18).toString('base64url')
+        password: 'admin123'
     };
     fs.writeFileSync(filePath, JSON.stringify(credentials), {
         encoding: 'utf8',

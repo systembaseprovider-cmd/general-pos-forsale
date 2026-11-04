@@ -410,6 +410,56 @@ test('public branding omits receipt details and full branding requires authentic
     }
 });
 
+test('admin-approved price overrides are recorded, included in the total, and audited', async () => {
+    await db.ready;
+    const admin = await User.create('override-admin', 'admin-pass-1234', 'Override Admin', 'admin');
+    const product = await Product.create({
+        code: `OVERRIDE-${crypto.randomUUID()}`,
+        sku: `OVERRIDE-SKU-${crypto.randomUUID()}`,
+        name: 'Override Test Item',
+        price: 100,
+        initialQty: 5,
+        reorderLevel: 1,
+        uom: 'piece',
+        actor: admin
+    });
+    const txnNo = `01-${new Date().getFullYear()}-98763`;
+    const sale = await Transaction.create({
+        txnNo,
+        userId: admin.id,
+        cashierName: admin.name,
+        customerName: 'Override Customer',
+        branch: admin.branch,
+        items: [{ productId: product.id, quantity: 2 }],
+        priceOverrides: [{
+            productId: product.id,
+            newUnitPrice: 75,
+            reason: 'Approved customer retention price'
+        }],
+        discountAmount: 0,
+        expectedTotal: 150,
+        tenderedAmount: 150,
+        changeAmount: 0,
+        paymentMethod: 'CASH',
+        referenceNo: ''
+    });
+    assert.equal(sale.totalAmount, 150);
+    assert.equal(sale.items[0].unitPrice, 75);
+    const audit = await get(
+        "SELECT reason, details FROM auditLogs WHERE eventType = 'PRICE_OVERRIDE_APPLIED' AND transactionId = ?",
+        [sale.id]
+    );
+    assert.equal(audit.reason, 'Approved customer retention price');
+    assert.deepEqual(JSON.parse(audit.details), {
+        productCode: product.code,
+        productName: product.name,
+        originalUnitPrice: 100,
+        newUnitPrice: 75,
+        quantity: 2,
+        amountDifference: -50
+    });
+});
+
 test('daily database backups are valid and old backup files are pruned', async () => {
     await db.ready;
     const backupPath = await createBackup(db);

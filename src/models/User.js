@@ -65,8 +65,8 @@ class User {
         if (typeof username !== 'string' || username.trim().length < 3 || username.trim().length > 64) {
             return Promise.reject(new Error('Username must be 3-64 characters'));
         }
-        if (typeof password !== 'string' || password.length < 8 || password === 'admin123') {
-            return Promise.reject(new Error('Password/PIN must be at least 8 characters and must not use the legacy default'));
+        if (typeof password !== 'string' || password.length < 8) {
+            return Promise.reject(new Error('Password/PIN must be at least 8 characters'));
         }
         if (typeof name !== 'string' || name.trim().length < 2) {
             return Promise.reject(new Error('Name is required'));

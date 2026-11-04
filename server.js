@@ -94,6 +94,8 @@ app.use("/api/products", require("./src/routes/product.routes"));
 app.use("/api/audit", require("./src/routes/audit.routes"));
 app.use("/api/settings", require("./src/routes/settings.routes"));
 app.use("/api/transactions", require("./src/routes/transaction.routes"));
+app.use("/api/readings", require("./src/routes/reading.routes"));
+app.use("/api/updates", require("./src/routes/update.routes"));
 
 // ========================================
 // LOGIN / HOME

@@ -53,6 +53,18 @@ const settingsTableReady = new Promise((resolve, reject) => {
     resolveSettingsTable = resolve;
     rejectSettingsTable = reject;
 });
+let resolveLegacyTransactionImports;
+let rejectLegacyTransactionImports;
+const legacyTransactionImportsReady = new Promise((resolve, reject) => {
+    resolveLegacyTransactionImports = resolve;
+    rejectLegacyTransactionImports = reject;
+});
+let resolveDailyClosures;
+let rejectDailyClosures;
+const dailyClosuresReady = new Promise((resolve, reject) => {
+    resolveDailyClosures = resolve;
+    rejectDailyClosures = reject;
+});
 
 // Enable foreign keys
 db.run('PRAGMA foreign_keys = ON');
@@ -226,6 +238,52 @@ db.serialize(() => {
     `, (err) => {
         if (err) console.error('Transaction Items table error:', err.message);
         else console.log('✓ Transaction Items table ready');
+    });
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS legacyTransactionImports (
+            sourceFingerprint TEXT NOT NULL,
+            sourcePath TEXT NOT NULL,
+            sourceTransactionId INTEGER NOT NULL,
+            targetTransactionId INTEGER NOT NULL UNIQUE,
+            originalTxnNo TEXT NOT NULL,
+            importedTxnNo TEXT NOT NULL,
+            importedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY(sourceFingerprint, sourceTransactionId),
+            UNIQUE(sourcePath, sourceTransactionId),
+            FOREIGN KEY(targetTransactionId) REFERENCES transactions(id) ON DELETE CASCADE
+        )
+    `, err => {
+        if (err) {
+            console.error('Legacy transaction import table error:', err.message);
+            rejectLegacyTransactionImports(err);
+        } else {
+            resolveLegacyTransactionImports();
+        }
+    });
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS dailyClosures (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            branch TEXT NOT NULL,
+            businessDate TEXT NOT NULL CHECK(
+                length(businessDate) = 10 AND
+                businessDate GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+            ),
+            closedBy INTEGER NOT NULL,
+            closedByName TEXT NOT NULL,
+            closedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            snapshotJson TEXT NOT NULL,
+            UNIQUE(branch, businessDate),
+            FOREIGN KEY(closedBy) REFERENCES users(id)
+        )
+    `, err => {
+        if (err) {
+            console.error('Daily closures table error:', err.message);
+            rejectDailyClosures(err);
+        } else {
+            resolveDailyClosures();
+        }
     });
 
     db.run(`
@@ -430,7 +488,9 @@ db.serialize(() => {
                 auditTableReady,
                 refundTablesReady,
                 inventoryTableReady,
-                settingsTableReady
+                settingsTableReady,
+                legacyTransactionImportsReady,
+                dailyClosuresReady
             ]))
             .then(() => new Promise((resolve, reject) => {
                 db.run(

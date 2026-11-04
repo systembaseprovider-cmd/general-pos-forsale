@@ -2,6 +2,7 @@ const express = require('express');
 const Transaction = require('../models/Transaction');
 const { normalizePaymentMethod } = require('../services/paymentMethod');
 const { verifyToken, requireRole, requireModule } = require('../middleware/auth');
+const { getBusinessDate } = require('../services/businessDate');
 
 const router = express.Router();
 
@@ -37,6 +38,7 @@ router.post('/', verifyToken, requireModule('pos'), async (req, res) => {
             discountAmount,
             discountReason,
             discountType,
+            priceOverrides,
             expectedTotal,
             tenderedAmount,
             changeAmount,
@@ -74,7 +76,28 @@ router.post('/', verifyToken, requireModule('pos'), async (req, res) => {
             });
         }
 
-        const currentYear = new Date().getFullYear();
+        const normalizedPriceOverrides = priceOverrides === undefined ? [] : priceOverrides;
+        if (!Array.isArray(normalizedPriceOverrides)) {
+            return res.status(400).json({ success: false, message: 'Price overrides must be a list' });
+        }
+        if (normalizedPriceOverrides.length > 0 && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Only an administrator can approve a price override' });
+        }
+        const overrideProductIds = new Set();
+        const saleProductIds = new Set((items || []).map(item => item?.productId));
+        for (const override of normalizedPriceOverrides) {
+            const price = Number(override?.newUnitPrice);
+            const reason = typeof override?.reason === 'string' ? override.reason.trim() : '';
+            if (!Number.isSafeInteger(override?.productId) || override.productId <= 0 ||
+                !Number.isFinite(price) || price <= 0 || price > 1000000 ||
+                reason.length < 5 || reason.length > 200 || overrideProductIds.has(override.productId) ||
+                !saleProductIds.has(override.productId)) {
+                return res.status(400).json({ success: false, message: 'Each price override needs a unique product, valid price, and 5-200 character reason' });
+            }
+            overrideProductIds.add(override.productId);
+        }
+
+        const currentYear = Number(getBusinessDate().slice(0, 4));
         const expectedPrefix = `${req.user.branch}-${currentYear}-`;
         const normalizedTxnNo = txnNo.trim();
         if (!normalizedTxnNo.startsWith(expectedPrefix) ||
@@ -95,6 +118,7 @@ router.post('/', verifyToken, requireModule('pos'), async (req, res) => {
             discountAmount: discountAmount === undefined ? 0 : Number(discountAmount),
             discountReason,
             discountType,
+            priceOverrides: normalizedPriceOverrides,
             expectedTotal: Number(expectedTotal),
             tenderedAmount: Number(tenderedAmount),
             changeAmount: Number(changeAmount),
@@ -114,10 +138,13 @@ router.post('/', verifyToken, requireModule('pos'), async (req, res) => {
 
     } catch (error) {
         console.error('Create transaction error:', error);
-        const status = error.code === 'IDEMPOTENCY_CONFLICT' || /insufficient stock/i.test(error.message) ? 409 : 400;
+        const status = error.code === 'IDEMPOTENCY_CONFLICT' ||
+            error.code === 'BUSINESS_DAY_CLOSED' ||
+            /insufficient stock/i.test(error.message) ? 409 : 400;
         return res.status(status).json({
             success: false,
-            message: error.message || 'Error creating transaction'
+            message: error.message || 'Error creating transaction',
+            ...(error.code === 'BUSINESS_DAY_CLOSED' ? { code: error.code, businessDate: error.businessDate } : {})
         });
     }
 });
@@ -184,12 +211,14 @@ router.post('/:id/void', verifyToken, requireRole('admin', 'cashier'), requireMo
     } catch (error) {
         console.error('Void transaction error:', error);
         const status = error.code === 'IDEMPOTENCY_CONFLICT' ||
+            error.code === 'BUSINESS_DAY_CLOSED' ||
             /already been voided|recorded refund cannot be voided/i.test(error.message)
             ? 409
             : /not found/i.test(error.message) ? 404 : 400;
         return res.status(status).json({
             success: false,
-            message: error.message || 'Unable to void transaction'
+            message: error.message || 'Unable to void transaction',
+            ...(error.code === 'BUSINESS_DAY_CLOSED' ? { code: error.code, businessDate: error.businessDate } : {})
         });
     }
 });
@@ -218,12 +247,15 @@ router.post('/:id/refunds', verifyToken, requireRole('admin', 'cashier'), requir
         });
     } catch (error) {
         console.error('Create refund error:', error);
-        const status = error.code === 'IDEMPOTENCY_CONFLICT' || /already refunded|exceeds the remaining|different transaction/i.test(error.message)
+        const status = error.code === 'IDEMPOTENCY_CONFLICT' ||
+            error.code === 'BUSINESS_DAY_CLOSED' ||
+            /already refunded|exceeds the remaining|different transaction/i.test(error.message)
             ? 409
             : /not found/i.test(error.message) ? 404 : 400;
         return res.status(status).json({
             success: false,
-            message: error.message || 'Unable to record refund'
+            message: error.message || 'Unable to record refund',
+            ...(error.code === 'BUSINESS_DAY_CLOSED' ? { code: error.code, businessDate: error.businessDate } : {})
         });
     }
 });
@@ -235,7 +267,7 @@ router.post('/:id/refunds', verifyToken, requireRole('admin', 'cashier'), requir
 router.get('/next-txn-no', verifyToken, requireModule('pos'), async (req, res) => {
     try {
         const branchCode = req.user.branch;
-        const year = new Date().getFullYear();
+        const year = Number(getBusinessDate().slice(0, 4));
         const nextTxnNo = await Transaction.getNextTxnNo(branchCode, year);
 
         return res.status(200).json({
@@ -368,7 +400,18 @@ router.get('/txn/:txnNo', verifyToken, async (req, res) => {
         }
 
         const scope = getTransactionScope(req.user);
-        const transaction = await Transaction.getByTxnNo(txnNo, scope.branch, scope.userId);
+        const [transactionByCurrentNumber, transactionByOriginalNumber] = await Promise.all([
+            Transaction.getByTxnNo(txnNo, scope.branch, scope.userId),
+            Transaction.getByOriginalTxnNo(txnNo, scope.branch, scope.userId)
+        ]);
+        if (transactionByCurrentNumber && transactionByOriginalNumber &&
+            transactionByCurrentNumber.id !== transactionByOriginalNumber.id) {
+            return res.status(409).json({
+                success: false,
+                message: 'This number belongs to two sales. Select the correct receipt from saved sales history.'
+            });
+        }
+        const transaction = transactionByCurrentNumber || transactionByOriginalNumber;
 
         if (!transaction) {
             return res.status(404).json({
@@ -436,6 +479,33 @@ router.get('/user/:userId', verifyToken, requireModule('reports'), async (req, r
         return res.status(500).json({
             success: false,
             message: 'Error fetching transactions'
+        });
+    }
+});
+
+router.get('/recent', verifyToken, requireModule('pos'), async (req, res) => {
+    try {
+        const requestedLimit = req.query.limit === undefined ? 100 : Number(req.query.limit);
+        if (!Number.isInteger(requestedLimit) || requestedLimit < 1) {
+            return res.status(400).json({
+                success: false,
+                message: 'Limit must be a positive integer'
+            });
+        }
+
+        const limit = Math.min(requestedLimit, 100);
+        const scope = getTransactionScope(req.user);
+        const transactions = await Transaction.getAll(limit, 0, scope.branch, scope.userId);
+        return res.status(200).json({
+            success: true,
+            data: transactions,
+            count: transactions.length
+        });
+    } catch (error) {
+        console.error('Get recent transactions error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error fetching recent transactions'
         });
     }
 });

@@ -764,6 +764,32 @@
       flex-direction: column;
     }
 
+    .reading-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 10px;
+    }
+
+    .reading-tab {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      background: #ffffff;
+      color: #334155;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .reading-tab.active {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #ffffff;
+    }
+
+    .reading-panel { display: none; }
+    .reading-panel.active { display: block; }
+
     .settings-table-wrap {
       width: 100%;
       max-height: min(62vh, 720px);
@@ -1320,6 +1346,10 @@
       display: none;
     }
 
+    #reading-print-area {
+      display: none;
+    }
+
     @media print {
       @page {
         size: 80mm auto;
@@ -1344,6 +1374,37 @@
         background: #ffffff;
         line-height: 1.3;
       }
+
+      body.printing-reading #thermal-receipt-area {
+        display: none !important;
+      }
+
+      body.printing-reading #reading-print-area {
+        display: block !important;
+        color: #000000;
+        background: #ffffff;
+      }
+
+      body.printing-reading #reading-print-area.receipt-format {
+        width: 78mm;
+        margin: 0 auto;
+        padding: 8px 4px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 11px;
+      }
+
+      body.printing-reading #reading-print-area.bond-format {
+        width: 100%;
+        padding: 14mm;
+        font-family: Arial, sans-serif;
+        font-size: 11pt;
+      }
+
+      #reading-print-area table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      #reading-print-area th, #reading-print-area td { border: 1px solid #000; padding: 5px; text-align: left; }
+      #reading-print-area .reading-print-title { text-align: center; font-size: 16px; font-weight: 800; }
+      #reading-print-area .reading-print-meta { text-align: center; margin: 4px 0; }
+      #reading-print-area .reading-print-total { font-weight: 800; font-size: 13px; }
     }
   </style>
 </head>
@@ -1363,7 +1424,6 @@
           <span id="total-amount">0.00</span>
         </div>
       </div>
-
       <!-- Item Table Header -->
       <div class="item-table-header" id="item-table-header">
         <span class="col-item">Item Description</span>
@@ -1483,7 +1543,7 @@
         </button>
         <button class="btn btn-dark" id="btn-void-sale">
           <i class="fa-solid fa-ban"></i>
-          <span>VOID SALE</span>
+          <span>VOID COMPLETED SALE</span>
         </button>
         <button class="btn btn-blue" id="btn-price-override">
           <i class="fa-solid fa-pen-to-square"></i>
@@ -1877,6 +1937,10 @@
             <input type="number" id="override-new-price-input" placeholder="0.00" step="any">
           </div>
         </div>
+        <div class="cash-input-group">
+          <label for="override-reason-input">Manager Reason (required, 5-200 characters):</label>
+          <textarea id="override-reason-input" maxlength="200" rows="3" placeholder="Why is this price being overridden?" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -1890,20 +1954,23 @@
   <div class="modal-overlay" id="sales-report-modal">
     <div class="modal-card" style="width: 480px;">
       <div class="modal-header">
-        <span><i class="fa-solid fa-chart-column"></i> Shift Sales Summary Report</span>
+        <span><i class="fa-solid fa-chart-column"></i> All-Time Sales Summary</span>
         <button class="modal-close" id="sales-report-modal-close-btn">&times;</button>
       </div>
 
       <div class="modal-body">
         <div class="stat-card-grid">
           <div class="stat-card">
-            <span class="stat-card-title">Gross Sales Total</span>
+            <span class="stat-card-title">Net Sales Total</span>
             <span class="stat-card-value">₱<span id="sr-total-sales">0.00</span></span>
           </div>
           <div class="stat-card">
             <span class="stat-card-title">Completed Txns</span>
             <span class="stat-card-value" style="color: #16a34a;" id="sr-total-count">0</span>
           </div>
+        </div>
+        <div id="sales-report-status" role="status" style="font-size: 0.78rem; color: #64748b; margin: 8px 0;">
+          Includes saved sales; refunds are deducted and voided sales are excluded.
         </div>
 
         <div class="sales-breakdown-list">
@@ -1980,6 +2047,8 @@
           <button type="button" class="settings-tab" data-settings-tab="products">Products List</button>
           <button type="button" class="settings-tab" data-settings-tab="users">User Management</button>
           <button type="button" class="settings-tab" data-settings-tab="branding">App Branding</button>
+          <button type="button" class="settings-tab" data-settings-tab="readings">X/Z Reading</button>
+          <button type="button" class="settings-tab" data-settings-tab="updates">Updates</button>
         </nav>
         <div class="settings-message" id="admin-settings-message" aria-live="polite"></div>
 
@@ -2153,6 +2222,69 @@
             </div>
           </form>
         </section>
+
+        <section class="settings-panel" data-settings-panel="readings">
+          <div>
+            <h3>Store Readings</h3>
+            <p style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">Choose X Reading for a mid-shift check or Z Reading for final branch closing. Business dates use Philippine time (Asia/Manila).</p>
+          </div>
+          <nav class="reading-tabs" aria-label="Reading type">
+            <button type="button" class="reading-tab active" data-reading-tab="x">X Reading</button>
+            <button type="button" class="reading-tab" data-reading-tab="z">Z Reading / Close Day</button>
+          </nav>
+          <section class="reading-panel active" data-reading-panel="x" style="padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc;">
+            <h4>X-reading — per cashier/user</h4>
+            <p style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">View or print an in-progress cashier report. This does not close the day.</p>
+            <div class="settings-form-grid" style="margin-top: 10px;">
+              <label class="settings-field">Business date
+                <input id="x-reading-date" type="date">
+              </label>
+              <label class="settings-field">Cashier / user
+                <select id="x-reading-user"></select>
+              </label>
+            </div>
+            <div class="settings-inline-actions" style="margin-top: 10px;">
+              <button type="button" class="settings-small-btn" id="x-reading-load">View X-reading</button>
+              <button type="button" class="settings-small-btn" id="btn-print-x-receipt" disabled>Print Receipt</button>
+              <button type="button" class="settings-small-btn" id="btn-print-x-bond" disabled>Print Bond Paper</button>
+            </div>
+            <div id="x-reading-result" role="status" aria-live="polite" style="margin-top: 12px;"></div>
+          </section>
+          <section class="reading-panel" data-reading-panel="z" style="padding: 14px; border: 1px solid #fecaca; border-radius: 8px; background: #fff7f7;">
+            <h4>Z-reading — final daily branch close</h4>
+            <p style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">After closing, sales, refunds, and voids for this branch are blocked until the next Philippine business day. This close cannot be undone.</p>
+            <div class="settings-form-grid" style="margin-top: 10px;">
+              <label class="settings-field">Business date
+                <input id="z-reading-date" type="date">
+              </label>
+            </div>
+            <div class="settings-inline-actions" style="margin-top: 10px;">
+              <button type="button" class="settings-small-btn" id="z-reading-load">Preview Z-reading</button>
+              <button type="button" class="settings-small-btn" id="btn-print-z-receipt" disabled>Print Receipt</button>
+              <button type="button" class="settings-small-btn" id="btn-print-z-bond" disabled>Print Bond Paper</button>
+              <button type="button" class="settings-small-btn danger" id="z-reading-close">Finalize Z-reading and close day</button>
+            </div>
+            <div id="z-reading-result" role="status" aria-live="polite" style="margin-top: 12px;"></div>
+          </section>
+        </section>
+
+        <section class="settings-panel" data-settings-panel="updates">
+          <div>
+            <h3>Application Updates</h3>
+            <p style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">Only administrators can view update status. Cashier screens never show update controls.</p>
+          </div>
+          <div style="padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; max-width: 620px;">
+            <div style="font-size: 0.82rem; color: #64748b;">Installed version</div>
+            <strong id="update-current-version" style="font-size: 1.2rem;">Checking…</strong>
+            <div id="update-status-message" role="status" aria-live="polite" style="margin-top: 12px;"></div>
+            <div style="margin-top: 12px; padding: 10px; border: 1px solid #fbbf24; border-radius: 6px; background: #fffbeb; color: #92400e; font-size: 0.82rem;">
+              Warning: Check and install updates only when there are no active customer transactions. Finish pending sales, close General POS on every terminal, and confirm a backup exists before installing.
+            </div>
+            <div class="settings-inline-actions" style="margin-top: 12px;">
+              <button type="button" class="settings-small-btn" id="btn-check-for-update">Check for Update</button>
+            </div>
+          </div>
+        </section>
       </div>
       <div class="modal-footer admin-settings-footer">
         <button type="button" class="modal-btn modal-btn-cancel" id="admin-settings-close-footer">Close</button>
@@ -2178,7 +2310,7 @@
         </div>
 
         <div style="font-weight: 700; font-size: 0.82rem; color: #475569; text-transform: uppercase; margin-top: 4px;">
-          Or Select From Recent Shift History:
+          Or Select From Saved Sales History:
         </div>
 
         <div class="recent-txn-list" id="recent-txn-history-container">
@@ -2306,6 +2438,7 @@
 
   <!-- DYNAMIC THERMAL RECEIPT CONTAINER FOR PRINTING -->
   <div id="thermal-receipt-area"></div>
+  <div id="reading-print-area"></div>
 
   <script src="/cart-draft.js"></script>
   <!-- JAVASCRIPT LOGIC -->
@@ -2484,20 +2617,10 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. TRANSACTION COUNTER & HISTORY MEMORY
+    // 2. TRANSACTION COUNTER
     let branchCode = currentUser && currentUser.branch ? currentUser.branch : "01";
     let transactionCounter = 1;
     let transactionNumberReady = false;
-    let completedTransactions = []; 
-
-    let shiftSales = {
-      totalAmount: 0,
-      totalCount: 0,
-      cash: 0,
-      card: 0,
-      bank: 0,
-      ewallet: 0
-    };
 
     async function loadNextTxnNumber() {
       if (!canAccessModule('pos')) return;
@@ -2552,8 +2675,10 @@
     let productDashboardCategory = 'All';
 
     const priceOverrideButton = document.getElementById('btn-price-override');
-    priceOverrideButton.disabled = true;
-    priceOverrideButton.title = 'Price overrides are disabled until manager approval and audit logging are available.';
+    priceOverrideButton.disabled = currentUser?.role !== 'admin';
+    priceOverrideButton.title = currentUser?.role === 'admin'
+      ? 'Admin-only price override. A reason is required and the change is audited.'
+      : 'Price override requires an administrator account.';
 
     // Products will be fetched from API
     let sampleProducts = [];
@@ -2977,6 +3102,7 @@
         <div class="t-divider"></div>
         <div class="t-row"><span>Date/Time:</span><span>${escapeHTML(txn.dateStr)} ${escapeHTML(txn.timeStr)}</span></div>
         <div class="t-row"><span>Txn No:</span><span>${escapeHTML(txn.txnNo)}</span></div>
+        ${txn.originalTxnNo && txn.originalTxnNo !== txn.txnNo ? `<div class="t-row"><span>Original Txn No:</span><span>${escapeHTML(txn.originalTxnNo)}</span></div>` : ''}
         <div class="t-row"><span>Cashier:</span><span>${escapeHTML(txn.cashier)}</span></div>
         <div class="t-row"><span>Customer:</span><span>${escapeHTML(txn.customer)}</span></div>
         <div class="t-divider"></div>
@@ -3038,54 +3164,125 @@
     const reprintSearchInput = document.getElementById('reprint-search-input');
     const recentTxnHistoryContainer = document.getElementById('recent-txn-history-container');
 
-    document.getElementById('btn-print-receipt').addEventListener('click', () => {
-      if (completedTransactions.length === 0) {
-        alert("Walang natatagpuan na natatapos na transaction sa shift na ito para i-reprint!");
-        return;
-      }
+    document.getElementById('btn-print-receipt').addEventListener('click', async () => {
       reprintSearchInput.value = "";
-      renderRecentTxnList();
       reprintModal.classList.add('active');
+      await loadRecentTxnList();
       setTimeout(() => reprintSearchInput.focus(), 100);
     });
 
     document.getElementById('reprint-modal-close-btn').addEventListener('click', () => reprintModal.classList.remove('active'));
     document.getElementById('btn-cancel-reprint').addEventListener('click', () => reprintModal.classList.remove('active'));
 
-    function renderRecentTxnList() {
-      recentTxnHistoryContainer.innerHTML = "";
-      const recentList = [...completedTransactions].reverse();
-
-      recentList.forEach(t => {
-        const item = document.createElement('div');
-        item.className = 'recent-txn-item';
-        item.innerHTML = `
-          <div>
-            <div style="font-weight: 800; color: #0284c7; font-size: 0.88rem;">${t.txnNo}</div>
-            <div style="font-size: 0.75rem; color: #64748b;">${t.timeStr} | ${t.customer}</div>
-          </div>
-          <div style="font-weight: 800; color: #1e293b;">₱${formatMoney(t.total)}</div>
-        `;
-        item.addEventListener('click', () => {
-          reprintModal.classList.remove('active');
-          showReceiptPreviewModal(t, true);
+    async function loadRecentTxnList() {
+      recentTxnHistoryContainer.textContent = 'Loading saved sales...';
+      try {
+        const response = await fetch('/api/transactions/recent?limit=100', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        recentTxnHistoryContainer.appendChild(item);
-      });
+        const result = await response.json();
+        if (!response.ok || !result.success || !Array.isArray(result.data)) {
+          throw new Error(result.message || `History request failed with status ${response.status}`);
+        }
+
+        recentTxnHistoryContainer.replaceChildren();
+        if (result.data.length === 0) {
+          recentTxnHistoryContainer.textContent = 'Wala pang saved sales sa database.';
+          return;
+        }
+        result.data.forEach(t => {
+          const item = document.createElement('div');
+          item.className = 'recent-txn-item';
+          const details = document.createElement('div');
+          const number = document.createElement('div');
+          number.style.cssText = 'font-weight: 800; color: #0284c7; font-size: 0.88rem;';
+          number.textContent = t.txnNo;
+          const description = document.createElement('div');
+          description.style.cssText = 'font-size: 0.75rem; color: #64748b;';
+          description.textContent = `${parseTransactionTimestamp(t.createdAt).toLocaleString()} | ${t.customerName || 'GUEST CUSTOMER'}`;
+          details.append(number, description);
+          if (t.originalTxnNo && t.originalTxnNo !== t.txnNo) {
+            const originalNumber = document.createElement('div');
+            originalNumber.style.cssText = 'font-size: 0.75rem; color: #64748b;';
+            originalNumber.textContent = `Original receipt number: ${t.originalTxnNo}`;
+            details.appendChild(originalNumber);
+          }
+          const amount = document.createElement('div');
+          amount.style.cssText = 'font-weight: 800; color: #1e293b;';
+          amount.textContent = `₱${formatMoney(Number(t.totalAmount))}`;
+          item.append(details, amount);
+          item.addEventListener('click', async () => {
+            try {
+              const transaction = await loadTransactionForReceipt(t.txnNo);
+              reprintModal.classList.remove('active');
+              showReceiptPreviewModal(transaction, true);
+            } catch (error) {
+              console.error('Unable to load saved receipt:', error);
+              alert(`Hindi ma-load ang resibo: ${error.message}`);
+            }
+          });
+          recentTxnHistoryContainer.appendChild(item);
+        });
+      } catch (error) {
+        console.error('Unable to load saved sales history:', error);
+        recentTxnHistoryContainer.textContent = `Hindi ma-load ang sales history: ${error.message}`;
+      }
     }
 
-    document.getElementById('btn-confirm-reprint-search').addEventListener('click', () => {
-      const q = reprintSearchInput.value.trim().toLowerCase();
-      if (!q) {
+    function parseTransactionTimestamp(value) {
+      const timestamp = String(value || '');
+      const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(timestamp)
+        ? `${timestamp.replace(' ', 'T')}Z`
+        : timestamp;
+      return new Date(normalized);
+    }
+
+    async function loadTransactionForReceipt(txnNo) {
+      const response = await fetch(`/api/transactions/txn/${encodeURIComponent(txnNo)}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success || !result.data) {
+        throw new Error(result.message || `Receipt request failed with status ${response.status}`);
+      }
+
+      const transaction = result.data;
+      const createdAt = parseTransactionTimestamp(transaction.createdAt);
+      return {
+        txnNo: transaction.txnNo,
+        originalTxnNo: transaction.originalTxnNo,
+        dateStr: createdAt.toLocaleDateString(),
+        timeStr: createdAt.toLocaleTimeString(),
+        cashier: transaction.cashierName,
+        customer: transaction.customerName || 'GUEST CUSTOMER',
+        items: (transaction.items || []).map(item => ({
+          code: item.productCode,
+          name: item.productName,
+          price: Number(item.unitPrice),
+          qty: Number(item.quantity)
+        })),
+        appliedDiscount: Number(transaction.discountAmount || 0),
+        total: Number(transaction.totalAmount),
+        paymentMethod: String(transaction.paymentMethod || ''),
+        tenderedAmt: Number(transaction.tenderedAmount || 0),
+        changeAmt: Number(transaction.changeAmount || 0),
+        refNo: transaction.referenceNo || ''
+      };
+    }
+
+    document.getElementById('btn-confirm-reprint-search').addEventListener('click', async () => {
+      const txnNo = reprintSearchInput.value.trim();
+      if (!txnNo) {
         alert("Mag-type ng Transaction Number para i-search!");
         return;
       }
-      const found = completedTransactions.find(t => t.txnNo.toLowerCase() === q);
-      if (found) {
+      try {
+        const transaction = await loadTransactionForReceipt(txnNo);
         reprintModal.classList.remove('active');
-        showReceiptPreviewModal(found, true);
-      } else {
-        alert(`❌ Hindi nahanap ang Receipt Number na "${reprintSearchInput.value}".`);
+        showReceiptPreviewModal(transaction, true);
+      } catch (error) {
+        console.error('Unable to find saved receipt:', error);
+        alert(`Hindi ma-load ang resibo: ${error.message}`);
       }
     });
 
@@ -3447,6 +3644,8 @@
       if (module === 'products') loadProductCatalog();
       if (module === 'users') loadManagedUsers();
       if (module === 'branding') loadBrandingForm();
+      if (module === 'readings') loadReadingsPanel();
+      if (module === 'updates') loadUpdateStatus();
     }
 
     function openAdminSettings() {
@@ -3455,7 +3654,9 @@
         inventory: isAdmin || canAccessModule('inventory'),
         products: isAdmin || canAccessModule('products'),
         users: isAdmin,
-        branding: isAdmin
+        branding: isAdmin,
+        readings: isAdmin,
+        updates: isAdmin
       };
       settingsTabs.forEach(tab => { tab.hidden = !access[tab.dataset.settingsTab]; });
       const firstTab = settingsTabs.find(tab => !tab.hidden);
@@ -3479,7 +3680,346 @@
       }
     });
     settingsTabs.forEach(tab => tab.addEventListener('click', () => activateSettingsTab(tab.dataset.settingsTab)));
+    document.getElementById('x-reading-load').addEventListener('click', loadXReading);
+    document.getElementById('z-reading-load').addEventListener('click', loadZReading);
+    document.getElementById('z-reading-close').addEventListener('click', closeZReading);
+    document.getElementById('btn-check-for-update').addEventListener('click', loadUpdateStatus);
+    document.getElementById('btn-print-x-receipt').addEventListener('click', () => printBusinessReading(lastXReading, 'X', 'receipt'));
+    document.getElementById('btn-print-x-bond').addEventListener('click', () => printBusinessReading(lastXReading, 'X', 'bond'));
+    document.getElementById('btn-print-z-receipt').addEventListener('click', () => printBusinessReading(lastZReading, 'Z', 'receipt'));
+    document.getElementById('btn-print-z-bond').addEventListener('click', () => printBusinessReading(lastZReading, 'Z', 'bond'));
+    document.querySelectorAll('[data-reading-tab]').forEach(tab => tab.addEventListener('click', () => {
+      const readingType = tab.dataset.readingTab;
+      document.querySelectorAll('[data-reading-tab]').forEach(item => item.classList.toggle('active', item === tab));
+      document.querySelectorAll('[data-reading-panel]').forEach(panel => {
+        panel.classList.toggle('active', panel.dataset.readingPanel === readingType);
+      });
+    }));
     applyModuleAccess();
+
+    let lastXReading = null;
+    let lastZReading = null;
+
+    async function loadUpdateStatus() {
+      const version = document.getElementById('update-current-version');
+      const message = document.getElementById('update-status-message');
+      const button = document.getElementById('btn-check-for-update');
+      if (currentUser?.role !== 'admin') return;
+      button.disabled = true;
+      message.textContent = 'Checking update service…';
+      try {
+        const result = await settingsRequest('/api/updates/status');
+        version.textContent = `v${result.data.currentVersion}`;
+        message.textContent = result.data.updatesConfigured
+          ? 'Cloudflare update service is configured. Update checking will be enabled when the signed release feed is connected.'
+          : 'Cloudflare update service is not configured yet. This screen is ready; no update can download until the secure release address is added.';
+      } catch (error) {
+        console.error('Unable to load update status:', error);
+        version.textContent = 'Unavailable';
+        message.textContent = `Unable to check update status: ${error.message}`;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function setReadingPrintEnabled(kind, enabled) {
+      const suffix = kind.toLowerCase();
+      document.getElementById(`btn-print-${suffix}-receipt`).disabled = !enabled;
+      document.getElementById(`btn-print-${suffix}-bond`).disabled = !enabled;
+    }
+
+    function buildReadingPrintTable(title, columns, rows) {
+      if (!rows?.length) return `<h4>${escapeHTML(title)}</h4><p>No recorded entries.</p>`;
+      const header = columns.map(column => `<th>${escapeHTML(column.label)}</th>`).join('');
+      const body = rows.map(row => `<tr>${columns.map(column => {
+        const value = row[column.key];
+        const text = column.money ? `₱${formatMoney(Number(value) || 0)}` : String(value ?? 0);
+        return `<td>${escapeHTML(text)}</td>`;
+      }).join('')}</tr>`).join('');
+      return `<h4>${escapeHTML(title)}</h4><table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    function printBusinessReading(reading, kind, format) {
+      if (!reading) return;
+      const printArea = document.getElementById('reading-print-area');
+      const title = `${kind} READING`;
+      const status = kind === 'Z' ? (reading.closed ? 'FINALIZED / CLOSED' : 'PREVIEW — DAY OPEN') : 'IN-PROGRESS CHECK';
+      const metrics = [
+        ['Transactions', reading.transactionCount],
+        ['Gross Sales', `₱${formatMoney(reading.grossSales)}`],
+        ['Discounts', `₱${formatMoney(reading.discountTotal)}`],
+        ['Refunds', `₱${formatMoney(reading.refundTotal)}`],
+        ['Voids', `${reading.voidCount} (₱${formatMoney(reading.voidedAmount)})`],
+        ['Net Sales', `₱${formatMoney(reading.netSales)}`]
+      ];
+      const totals = metrics.map(([label, value]) => `<div class="reading-print-total">${escapeHTML(label)}: ${escapeHTML(String(value))}</div>`).join('');
+      const paymentTable = buildReadingPrintTable('Payment Breakdown', [
+        { key: 'paymentMethod', label: 'Payment' },
+        { key: 'grossSales', label: 'Gross', money: true },
+        { key: 'refundTotal', label: 'Refunds', money: true },
+        { key: 'netSales', label: 'Net', money: true }
+      ], reading.paymentBreakdown);
+      const cashierTable = kind === 'Z' ? buildReadingPrintTable('Cashier / User Breakdown', [
+        { key: 'name', label: 'User' },
+        { key: 'transactionCount', label: 'Transactions' },
+        { key: 'grossSales', label: 'Gross', money: true },
+        { key: 'refundTotal', label: 'Refunds', money: true },
+        { key: 'voidCount', label: 'Voids' },
+        { key: 'netSales', label: 'Net', money: true }
+      ], reading.cashierBreakdown) : '';
+      const user = kind === 'X' && reading.user
+        ? `<div class="reading-print-meta">Cashier: ${escapeHTML(reading.user.name)} (${escapeHTML(reading.user.username)})</div>`
+        : '';
+      printArea.className = format === 'bond' ? 'bond-format' : 'receipt-format';
+      printArea.innerHTML = `
+        <div class="reading-print-title">${escapeHTML(brandingSettings.appName || 'GENERAL POS')}</div>
+        <div class="reading-print-title">${title}</div>
+        <div class="reading-print-meta">Business Date: ${escapeHTML(reading.businessDate)} | ${escapeHTML(reading.timeZone || 'Asia/Manila')}</div>
+        <div class="reading-print-meta">${escapeHTML(status)}</div>
+        ${user}
+        <hr>
+        ${totals}
+        ${paymentTable}
+        ${cashierTable}
+        <p>Printed: ${escapeHTML(new Date().toLocaleString())}</p>`;
+      const pageStyle = document.createElement('style');
+      pageStyle.id = 'reading-print-page-style';
+      pageStyle.textContent = `@media print { @page { size: ${format === 'bond' ? 'A4 portrait' : '80mm auto'}; margin: ${format === 'bond' ? '12mm' : '0'}; } }`;
+      document.head.appendChild(pageStyle);
+      document.body.classList.add('printing-reading');
+      const cleanup = () => {
+        document.body.classList.remove('printing-reading');
+        pageStyle.remove();
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+    }
+
+    function currentBusinessDate() {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Manila',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(new Date());
+      const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+      return `${values.year}-${values.month}-${values.day}`;
+    }
+
+    async function loadReadingsPanel() {
+      const date = currentBusinessDate();
+      const xDate = document.getElementById('x-reading-date');
+      const zDate = document.getElementById('z-reading-date');
+      xDate.max = date;
+      zDate.max = date;
+      if (!xDate.value) xDate.value = date;
+      if (!zDate.value) zDate.value = date;
+      document.getElementById('x-reading-result').textContent = 'Loading users...';
+      try {
+        const result = await settingsRequest('/api/readings/users');
+        const select = document.getElementById('x-reading-user');
+        select.replaceChildren();
+        result.data.forEach(user => {
+          if (!user.isActive) return;
+          const option = document.createElement('option');
+          option.value = String(user.id);
+          option.textContent = `${user.name} (${user.role})`;
+          select.appendChild(option);
+        });
+        if (select.options.length === 0) {
+          document.getElementById('x-reading-result').textContent = 'Walang active na user sa branch.';
+        } else {
+          const currentOption = [...select.options].find(option => option.value === String(currentUser.id));
+          if (currentOption) select.value = currentOption.value;
+          await loadXReading();
+        }
+        await loadZReading();
+      } catch (error) {
+        console.error('Unable to initialize X/Z readings:', error);
+        document.getElementById('x-reading-result').textContent = `Hindi ma-load ang X/Z readings: ${error.message}`;
+      }
+    }
+
+    function appendReadingTable(container, title, columns, rows) {
+      const heading = document.createElement('h4');
+      heading.textContent = title;
+      heading.style.margin = '14px 0 6px';
+      container.appendChild(heading);
+      if (rows.length === 0) {
+        const empty = document.createElement('p');
+        empty.textContent = 'Wala pang recorded transactions.';
+        container.appendChild(empty);
+        return;
+      }
+      const wrap = document.createElement('div');
+      wrap.className = 'settings-table-wrap';
+      const table = document.createElement('table');
+      table.className = 'settings-table';
+      const header = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      columns.forEach(column => {
+        const cell = document.createElement('th');
+        cell.textContent = column.label;
+        headerRow.appendChild(cell);
+      });
+      header.appendChild(headerRow);
+      const body = document.createElement('tbody');
+      rows.forEach(row => {
+        const tableRow = document.createElement('tr');
+        columns.forEach(column => {
+          const cell = document.createElement('td');
+          const value = row[column.key];
+          cell.textContent = column.money
+            ? `₱${formatMoney(Number(value) || 0)}`
+            : String(value ?? 0);
+          tableRow.appendChild(cell);
+        });
+        body.appendChild(tableRow);
+      });
+      table.append(header, body);
+      wrap.appendChild(table);
+      container.appendChild(wrap);
+    }
+
+    function renderBusinessReading(container, reading, kind) {
+      container.replaceChildren();
+      const title = document.createElement('h4');
+      title.textContent = `${kind} Reading — ${reading.businessDate} (${reading.timeZone})`;
+      container.appendChild(title);
+      if (kind === 'X' && reading.user) {
+        const user = document.createElement('p');
+        user.textContent = `User: ${reading.user.name} (${reading.user.username})`;
+        container.appendChild(user);
+      }
+      if (kind === 'Z' && reading.closed) {
+        const closed = document.createElement('p');
+        closed.textContent = `CLOSED by ${reading.closure.closedByName} at ${parseTransactionTimestamp(reading.closure.closedAt).toLocaleString()}`;
+        closed.style.fontWeight = '700';
+        container.appendChild(closed);
+      } else if (kind === 'Z') {
+        const preview = document.createElement('p');
+        preview.textContent = 'Preview only — the day is still open until Z-reading is finalized.';
+        container.appendChild(preview);
+      }
+
+      const totals = document.createElement('div');
+      totals.className = 'settings-form-grid';
+      const metrics = [
+        ['Transactions', reading.transactionCount],
+        ['Gross sales', `₱${formatMoney(reading.grossSales)}`],
+        ['Discounts', `₱${formatMoney(reading.discountTotal)}`],
+        ['Refunds', `₱${formatMoney(reading.refundTotal)}`],
+        ['Voids', `${reading.voidCount} (₱${formatMoney(reading.voidedAmount)})`],
+        ['Net sales', `₱${formatMoney(reading.netSales)}`]
+      ];
+      metrics.forEach(([label, value]) => {
+        const card = document.createElement('div');
+        card.style.cssText = 'padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;';
+        const name = document.createElement('div');
+        name.style.cssText = 'font-size: 0.78rem; color: #64748b;';
+        name.textContent = label;
+        const amount = document.createElement('strong');
+        amount.textContent = String(value);
+        card.append(name, amount);
+        totals.appendChild(card);
+      });
+      container.appendChild(totals);
+      appendReadingTable(container, 'Payment breakdown', [
+        { key: 'paymentMethod', label: 'Payment' },
+        { key: 'grossSales', label: 'Gross', money: true },
+        { key: 'refundTotal', label: 'Refunds', money: true },
+        { key: 'netSales', label: 'Net', money: true }
+      ], reading.paymentBreakdown);
+      if (kind === 'Z') {
+        appendReadingTable(container, 'Cashier / user breakdown', [
+          { key: 'name', label: 'User' },
+          { key: 'transactionCount', label: 'Transactions' },
+          { key: 'grossSales', label: 'Gross', money: true },
+          { key: 'refundTotal', label: 'Refunds', money: true },
+          { key: 'voidCount', label: 'Voids' },
+          { key: 'netSales', label: 'Net', money: true }
+        ], reading.cashierBreakdown);
+      }
+    }
+
+    async function loadXReading() {
+      const resultContainer = document.getElementById('x-reading-result');
+      const userId = document.getElementById('x-reading-user').value;
+      const date = document.getElementById('x-reading-date').value;
+      if (!userId || !date) {
+        resultContainer.textContent = 'Pumili ng user at business date.';
+        return;
+      }
+      resultContainer.textContent = 'Loading X-reading...';
+      setReadingPrintEnabled('X', false);
+      try {
+        const result = await settingsRequest(`/api/readings/x?date=${encodeURIComponent(date)}&userId=${encodeURIComponent(userId)}`);
+        lastXReading = result.data;
+        renderBusinessReading(resultContainer, result.data, 'X');
+        setReadingPrintEnabled('X', true);
+      } catch (error) {
+        lastXReading = null;
+        console.error('Unable to load X-reading:', error);
+        resultContainer.textContent = `Hindi ma-load ang X-reading: ${error.message}`;
+      }
+    }
+
+    async function loadZReading() {
+      const resultContainer = document.getElementById('z-reading-result');
+      const date = document.getElementById('z-reading-date').value;
+      const closeButton = document.getElementById('z-reading-close');
+      if (!date) {
+        resultContainer.textContent = 'Pumili ng business date.';
+        closeButton.disabled = true;
+        return;
+      }
+      resultContainer.textContent = 'Loading Z-reading...';
+      closeButton.disabled = true;
+      setReadingPrintEnabled('Z', false);
+      try {
+        const result = await settingsRequest(`/api/readings/z?date=${encodeURIComponent(date)}`);
+        lastZReading = result.data;
+        renderBusinessReading(resultContainer, result.data, 'Z');
+        setReadingPrintEnabled('Z', true);
+        const canCloseToday = date === currentBusinessDate() && !result.data.closed;
+        closeButton.disabled = !canCloseToday;
+      } catch (error) {
+        lastZReading = null;
+        console.error('Unable to load Z-reading:', error);
+        resultContainer.textContent = `Hindi ma-load ang Z-reading: ${error.message}`;
+        closeButton.disabled = true;
+      }
+    }
+
+    async function closeZReading() {
+      const date = document.getElementById('z-reading-date').value;
+      if (date !== currentBusinessDate()) {
+        setSettingsMessage('Ngayong business day lang maaaring mag-finalize ng Z-reading.', true);
+        return;
+      }
+      const confirmed = confirm(
+        `I-finalize ang Z-reading para sa ${date}?\n\nPagkatapos nito, naka-lock ang sales, refunds, at voids para sa branch hanggang bukas. Hindi ito maaaring i-undo.`
+      );
+      if (!confirmed) return;
+      const button = document.getElementById('z-reading-close');
+      button.disabled = true;
+      setSettingsMessage('Sine-save ang Z-reading at isinasara ang business day...');
+      try {
+        const result = await settingsRequest('/api/readings/z/close', {
+          method: 'POST',
+          body: JSON.stringify({ confirmClose: true })
+        });
+        lastZReading = result.data;
+        renderBusinessReading(document.getElementById('z-reading-result'), result.data, 'Z');
+        setReadingPrintEnabled('Z', true);
+        setSettingsMessage('Na-finalize ang Z-reading. Naka-lock na ang sales, refunds, at voids hanggang bukas.');
+      } catch (error) {
+        console.error('Unable to finalize Z-reading:', error);
+        setSettingsMessage(`Hindi na-finalize ang Z-reading: ${error.message}`, true);
+        await loadZReading();
+      }
+    }
 
     async function loadInventoryProducts() {
       const tbody = document.getElementById('inventory-products-body');
@@ -4007,9 +4547,14 @@
     // PRICE OVERRIDE LOGIC
     const priceOverrideModal = document.getElementById('price-override-modal');
     const overrideNewPriceInput = document.getElementById('override-new-price-input');
+    const overrideReasonInput = document.getElementById('override-reason-input');
     let activeOverrideIndex = null;
 
     document.getElementById('btn-price-override').addEventListener('click', () => {
+      if (currentUser?.role !== 'admin') {
+        alert('Administrator approval is required for a price override.');
+        return;
+      }
       if (cart.length === 0) {
         alert("Walang laman ang cart para palitan ang presyo!");
         return;
@@ -4025,6 +4570,7 @@
         document.getElementById('override-item-name').innerText = item.name;
         document.getElementById('override-current-price').innerText = `₱${formatMoney(item.price)}`;
         overrideNewPriceInput.value = item.price;
+        overrideReasonInput.value = item.priceOverrideReason || '';
         priceOverrideModal.classList.add('active');
         setTimeout(() => overrideNewPriceInput.focus(), 100);
       } else {
@@ -4037,13 +4583,22 @@
 
     document.getElementById('btn-confirm-price-override').addEventListener('click', () => {
       const newPrice = parseFloat(overrideNewPriceInput.value);
-      if (!isNaN(newPrice) && newPrice >= 0 && activeOverrideIndex !== null) {
-        cart[activeOverrideIndex].price = newPrice;
+      const reason = overrideReasonInput.value.trim();
+      if (currentUser?.role !== 'admin') {
+        alert('Administrator approval is required for a price override.');
+        return;
+      }
+      if (!isNaN(newPrice) && newPrice > 0 && newPrice <= 1000000 &&
+          reason.length >= 5 && reason.length <= 200 && activeOverrideIndex !== null) {
+        const item = cart[activeOverrideIndex];
+        item.originalPrice = Number.isFinite(item.originalPrice) ? item.originalPrice : item.price;
+        item.price = newPrice;
+        item.priceOverrideReason = reason;
         selectedCartIndex = activeOverrideIndex;
         renderCart();
         priceOverrideModal.classList.remove('active');
       } else {
-        alert("Mag-lagay ng tamang presyo!");
+        alert("Maglagay ng presyong higit sa zero at dahilan na 5-200 characters.");
       }
     });
 
@@ -4508,16 +5063,51 @@
     // SALES REPORT LOGIC
     const salesReportModal = document.getElementById('sales-report-modal');
 
-    document.getElementById('btn-sales-report').addEventListener('click', () => {
-      document.getElementById('sr-total-sales').innerText = formatMoney(shiftSales.totalAmount);
-      document.getElementById('sr-total-count').innerText = shiftSales.totalCount;
-      document.getElementById('sr-cash-sales').innerText = formatMoney(shiftSales.cash);
-      document.getElementById('sr-card-sales').innerText = formatMoney(shiftSales.card);
-      document.getElementById('sr-bank-sales').innerText = formatMoney(shiftSales.bank);
-      document.getElementById('sr-ewallet-sales').innerText = formatMoney(shiftSales.ewallet);
+    document.getElementById('btn-sales-report').addEventListener('click', async () => {
       document.getElementById('btn-view-audit').style.display = currentUser.role === 'admin' ? 'block' : 'none';
-      
       salesReportModal.classList.add('active');
+      const status = document.getElementById('sales-report-status');
+      status.textContent = 'Loading saved sales...';
+      try {
+        const today = new Date();
+        const end = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const query = `start=1900-01-01&end=${encodeURIComponent(end)}`;
+        const [summaryResponse, paymentResponse] = await Promise.all([
+          fetch(`/api/transactions/summary/date-range?${query}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          }),
+          fetch(`/api/transactions/summary/by-payment?${query}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          })
+        ]);
+        const [summaryResult, paymentResult] = await Promise.all([
+          summaryResponse.json(),
+          paymentResponse.json()
+        ]);
+        if (!summaryResponse.ok || !summaryResult.success || !summaryResult.data ||
+            !paymentResponse.ok || !paymentResult.success || !Array.isArray(paymentResult.data)) {
+          throw new Error(summaryResult.message || paymentResult.message || 'Sales report request failed');
+        }
+
+        const paymentTotals = { CASH: 0, CARD: 0, BANK: 0, 'E-WALLET': 0 };
+        paymentResult.data.forEach(payment => {
+          const method = String(payment.paymentMethod || '').trim().toUpperCase();
+          const key = method.startsWith('E-WALLET') ? 'E-WALLET' : method;
+          if (Object.prototype.hasOwnProperty.call(paymentTotals, key)) {
+            paymentTotals[key] += Number(payment.total || 0);
+          }
+        });
+        document.getElementById('sr-total-sales').textContent = formatMoney(Number(summaryResult.data.totalSales || 0));
+        document.getElementById('sr-total-count').textContent = summaryResult.data.transactionCount || 0;
+        document.getElementById('sr-cash-sales').textContent = formatMoney(paymentTotals.CASH);
+        document.getElementById('sr-card-sales').textContent = formatMoney(paymentTotals.CARD);
+        document.getElementById('sr-bank-sales').textContent = formatMoney(paymentTotals.BANK);
+        document.getElementById('sr-ewallet-sales').textContent = formatMoney(paymentTotals['E-WALLET']);
+        status.textContent = 'All recorded sales through today. Refunds are deducted; voided sales are excluded.';
+      } catch (error) {
+        console.error('Unable to load sales report:', error);
+        status.textContent = `Hindi ma-load ang sales report: ${error.message}`;
+      }
     });
 
     document.getElementById('btn-view-audit').addEventListener('click', async () => {
@@ -4618,6 +5208,11 @@
         discountAmount: appliedDiscount,
         discountReason: appliedDiscountReason,
         discountType: appliedDiscountType,
+        priceOverrides: cart.filter(item => item.type === 'item' && item.priceOverrideReason).map(item => ({
+          productId: item.id,
+          newUnitPrice: item.price,
+          reason: item.priceOverrideReason
+        })),
         expectedTotal: currentTotal,
         tenderedAmount: method.toUpperCase() === 'CASH' ? tenderedAmt : currentTotal,
         changeAmount: method.toUpperCase() === 'CASH' ? changeAmt : 0,
@@ -4702,14 +5297,6 @@
           cardDigits: paymentMeta.cardDigits || '',
           batchNo: paymentMeta.batchNo || ''
         };
-
-        completedTransactions.push(newTxnData);
-        shiftSales.totalAmount += saved.totalAmount;
-        shiftSales.totalCount++;
-        if (saved.paymentMethod === 'CASH') shiftSales.cash += saved.totalAmount;
-        if (saved.paymentMethod === 'CARD') shiftSales.card += saved.totalAmount;
-        if (saved.paymentMethod === 'BANK') shiftSales.bank += saved.totalAmount;
-        if (saved.paymentMethod === 'E-WALLET') shiftSales.ewallet += saved.totalAmount;
 
         cart = [];
         selectedCartIndex = null;

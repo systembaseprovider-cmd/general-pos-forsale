@@ -3,7 +3,9 @@ const crypto = require('crypto');
 const sqlite3 = require('sqlite3').verbose();
 const AuditLog = require('./AuditLog');
 const InventoryMovement = require('./InventoryMovement');
+const Reading = require('./Reading');
 const { normalizePaymentMethod } = require('../services/paymentMethod');
+const { getBusinessDate } = require('../services/businessDate');
 
 function buildScope(branch, userId) {
     const clauses = [];
@@ -72,6 +74,7 @@ class Transaction {
                 discountAmount,
                 discountReason,
                 discountType,
+                priceOverrides = [],
                 expectedTotal,
                 tenderedAmount,
                 changeAmount,
@@ -105,6 +108,20 @@ class Transaction {
                 return reject(new Error('Cash tendered and change must be valid non-negative amounts'));
             }
 
+            if (!Array.isArray(priceOverrides)) return reject(new Error('Price overrides must be a list'));
+            const overridesByProductId = new Map();
+            for (const override of priceOverrides) {
+                const productId = override?.productId;
+                const newUnitPrice = Number(override?.newUnitPrice);
+                const reason = typeof override?.reason === 'string' ? override.reason.trim() : '';
+                if (!Number.isSafeInteger(productId) || productId <= 0 ||
+                    !Number.isFinite(newUnitPrice) || newUnitPrice <= 0 || newUnitPrice > 1000000 ||
+                    reason.length < 5 || reason.length > 200 || overridesByProductId.has(productId)) {
+                    return reject(new Error('Each price override needs a unique product, valid price, and 5-200 character reason'));
+                }
+                overridesByProductId.set(productId, { newUnitPrice: Math.round(newUnitPrice * 100) / 100, reason });
+            }
+
             const quantities = new Map();
             for (const item of items) {
                 if (!item || !Number.isSafeInteger(item.productId) || item.productId <= 0 ||
@@ -120,6 +137,11 @@ class Transaction {
 
             const normalizedItems = Array.from(quantities, ([productId, quantity]) => ({ productId, quantity }))
                 .sort((a, b) => a.productId - b.productId);
+            for (const productId of overridesByProductId.keys()) {
+                if (!quantities.has(productId)) {
+                    return reject(new Error('A price override must belong to an item in this transaction'));
+                }
+            }
             const normalizedCustomerName = String(customerName || 'GUEST CUSTOMER').trim().slice(0, 120);
             const normalizedReferenceNo = String(referenceNo || '').trim().slice(0, 120);
             if (['CARD', 'BANK', 'E-WALLET'].includes(normalizedPaymentMethod) && !normalizedReferenceNo) {
@@ -133,6 +155,7 @@ class Transaction {
                 discountAmount: Math.round(discountAmount * 100),
                 discountReason: normalizedDiscountReason,
                 discountType: normalizedDiscountType,
+                priceOverrides: Array.from(overridesByProductId, ([productId, override]) => ({ productId, ...override })),
                 tenderedAmount: Math.round(tenderedAmount * 100),
                 changeAmount: Math.round(changeAmount * 100),
                 paymentMethod: normalizedPaymentMethod,
@@ -201,7 +224,9 @@ class Transaction {
                             conflict.code = 'IDEMPOTENCY_CONFLICT';
                             return rollback(conflict);
                         }
-                        loadProducts(0, []);
+                        Reading.assertBusinessDayOpen(transactionDb, branch)
+                            .then(() => loadProducts(0, []))
+                            .catch(rollback);
                     }
                 );
 
@@ -222,14 +247,23 @@ class Transaction {
                                 return rollback(new Error(`Insufficient stock for ${product.name}; available: ${product.stock}`));
                             }
 
-                            const unitPriceCents = Math.round(Number(product.price) * 100);
+                            const override = overridesByProductId.get(item.productId);
+                            const originalUnitPriceCents = Math.round(Number(product.price) * 100);
+                            const unitPriceCents = override
+                                ? Math.round(override.newUnitPrice * 100)
+                                : originalUnitPriceCents;
                             products.push({
                                 ...item,
                                 productCode: product.code,
                                 productName: product.name,
                                 previousStock: product.stock,
                                 unitPrice: unitPriceCents / 100,
-                                lineTotal: Math.round(unitPriceCents * item.quantity) / 100
+                                lineTotal: Math.round(unitPriceCents * item.quantity) / 100,
+                                priceOverride: override ? {
+                                    originalUnitPrice: originalUnitPriceCents / 100,
+                                    newUnitPrice: unitPriceCents / 100,
+                                    reason: override.reason
+                                } : null
                             });
                             loadProducts(index + 1, products);
                         }
@@ -298,6 +332,28 @@ class Transaction {
                                         timestamp: new Date().toISOString()
                                     });
                                 });
+                                const recordPriceOverrideAudits = index => {
+                                    const item = products[index];
+                                    if (!item) return insertSaleItems();
+                                    if (!item.priceOverride) return recordPriceOverrideAudits(index + 1);
+                                    AuditLog.createOnConnection(transactionDb, {
+                                        eventType: 'PRICE_OVERRIDE_APPLIED',
+                                        userId,
+                                        branch,
+                                        transactionId,
+                                        productId: item.productId,
+                                        reason: item.priceOverride.reason,
+                                        details: {
+                                            productCode: item.productCode,
+                                            productName: item.productName,
+                                            originalUnitPrice: item.priceOverride.originalUnitPrice,
+                                            newUnitPrice: item.priceOverride.newUnitPrice,
+                                            quantity: item.quantity,
+                                            amountDifference: Number(((item.priceOverride.newUnitPrice - item.priceOverride.originalUnitPrice) * item.quantity).toFixed(2))
+                                        }
+                                    }).then(() => recordPriceOverrideAudits(index + 1)).catch(rollback);
+                                };
+                                const recordAuditsThenItems = () => recordPriceOverrideAudits(0);
                                 if (discountCents > 0) {
                                     AuditLog.createOnConnection(transactionDb, {
                                         eventType: 'DISCOUNT_APPLIED',
@@ -311,9 +367,9 @@ class Transaction {
                                             subtotal: subtotalCents / 100,
                                             totalAmount: totalCents / 100
                                         }
-                                    }).then(insertSaleItems).catch(rollback);
+                                    }).then(recordAuditsThenItems).catch(rollback);
                                 } else {
-                                    insertSaleItems();
+                                    recordAuditsThenItems();
                                 }
                             }
                         );
@@ -559,6 +615,8 @@ class Transaction {
                         });
                     }
 
+                    await Reading.assertBusinessDayOpen(transactionDb, branch);
+
                     const sale = await get(
                         'SELECT id, txnNo, branch, subtotal, discountAmount, totalAmount, voidedAt FROM transactions WHERE id = ? AND branch = ?',
                         [transactionId, branch]
@@ -768,6 +826,8 @@ class Transaction {
                         throw new Error('Transaction has already been voided');
                     }
 
+                    await Reading.assertBusinessDayOpen(transactionDb, branch);
+
                     const refund = await get(
                         'SELECT COUNT(*) AS count FROM refunds WHERE transactionId = ?',
                         [transactionId]
@@ -869,12 +929,19 @@ class Transaction {
         return new Promise((resolve, reject) => {
             const scope = buildScope(branch, userId);
             db.get(
-                `SELECT id, txnNo, userId, cashierName, customerName,
-                        subtotal, discountAmount, vatableSales, vatAmount, totalAmount,
-                        tenderedAmount, changeAmount,
-                        paymentMethod, referenceNo, notes, createdAt,
-                        voidedAt, voidReason, voidedBy
-                 FROM transactions WHERE id = ?${scope.sql}`,
+                `SELECT transactions.id, transactions.txnNo, transactions.userId,
+                        transactions.cashierName, transactions.customerName,
+                        transactions.subtotal, transactions.discountAmount,
+                        transactions.vatableSales, transactions.vatAmount,
+                        transactions.totalAmount, transactions.tenderedAmount,
+                        transactions.changeAmount, transactions.paymentMethod,
+                        transactions.referenceNo, transactions.notes, transactions.createdAt,
+                        transactions.voidedAt, transactions.voidReason, transactions.voidedBy,
+                        legacy.originalTxnNo
+                 FROM transactions
+                 LEFT JOIN legacyTransactionImports AS legacy
+                    ON legacy.targetTransactionId = transactions.id
+                 WHERE transactions.id = ?${scope.sql}`,
                 [id, ...scope.values],
                 (err, transaction) => {
                     if (err) return reject(err);
@@ -917,27 +984,47 @@ class Transaction {
         });
     }
 
+    static getByOriginalTxnNo(txnNo, branch, userId) {
+        return new Promise((resolve, reject) => {
+            const scope = buildScope(branch, userId);
+            db.get(
+                `SELECT transactions.id
+                 FROM transactions
+                 INNER JOIN legacyTransactionImports AS legacy
+                    ON legacy.targetTransactionId = transactions.id
+                 WHERE legacy.originalTxnNo = ?${scope.sql}
+                 LIMIT 1`,
+                [txnNo, ...scope.values],
+                (err, row) => {
+                    if (err) return reject(err);
+                    if (!row) return resolve(null);
+                    this.getById(row.id, branch, userId).then(resolve).catch(reject);
+                }
+            );
+        });
+    }
+
     /**
      * Generate the next sequential transaction number for the current branch/year.
      * @param {string} branchCode
      * @param {number} year
      * @returns {Promise<string>}
      */
-    static getNextTxnNo(branchCode = '01', year = new Date().getFullYear()) {
+    static getNextTxnNo(branchCode = '01', year = Number(getBusinessDate().slice(0, 4))) {
         return new Promise((resolve, reject) => {
             const prefix = `${branchCode}-${year}-`;
             db.get(
-                `SELECT txnNo FROM transactions WHERE txnNo LIKE ? ORDER BY createdAt DESC, id DESC LIMIT 1`,
-                [`${prefix}%`],
+                `SELECT MAX(CAST(substr(txnNo, length(?) + 1) AS INTEGER)) AS maxSequence
+                 FROM transactions
+                 WHERE txnNo GLOB ?`,
+                [prefix, `${prefix}[0-9][0-9][0-9][0-9][0-9]`],
                 (err, row) => {
                     if (err) return reject(err);
-
-                    if (!row || !row.txnNo) {
-                        return resolve(`${prefix}${String(1).padStart(5, '0')}`);
+                    const maxSequence = Number(row?.maxSequence || 0);
+                    if (maxSequence >= 99999) {
+                        return reject(new Error(`Transaction number sequence is exhausted for ${branchCode}-${year}`));
                     }
-
-                    const match = row.txnNo.match(/-(\d{5})$/);
-                    const nextSequence = match ? parseInt(match[1], 10) + 1 : 1;
+                    const nextSequence = maxSequence + 1;
                     return resolve(`${prefix}${String(nextSequence).padStart(5, '0')}`);
                 }
             );
@@ -954,11 +1041,17 @@ class Transaction {
         return new Promise((resolve, reject) => {
             const scope = buildScope(branch, userId);
             db.all(
-                `SELECT id, txnNo, userId, cashierName, customerName,
-                       subtotal, discountAmount, totalAmount, paymentMethod, createdAt,
-                       voidedAt, voidReason
-                 FROM transactions WHERE 1 = 1${scope.sql}
-                 ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
+                `SELECT transactions.id, transactions.txnNo, transactions.userId,
+                       transactions.cashierName, transactions.customerName,
+                       transactions.subtotal, transactions.discountAmount,
+                       transactions.totalAmount, transactions.paymentMethod,
+                       transactions.createdAt, transactions.voidedAt, transactions.voidReason,
+                       legacy.originalTxnNo
+                 FROM transactions
+                 LEFT JOIN legacyTransactionImports AS legacy
+                    ON legacy.targetTransactionId = transactions.id
+                 WHERE 1 = 1${scope.sql}
+                 ORDER BY transactions.createdAt DESC, transactions.id DESC LIMIT ? OFFSET ?`,
                 [...scope.values, limit, offset],
                 (err, rows) => {
                     if (err) reject(err);
@@ -1006,7 +1099,7 @@ class Transaction {
                        subtotal, discountAmount, totalAmount, paymentMethod, createdAt,
                        voidedAt, voidReason
                 FROM transactions 
-                WHERE voidedAt IS NULL AND DATE(createdAt) BETWEEN ? AND ?${scope.sql}
+                WHERE voidedAt IS NULL AND date(createdAt, '+8 hours') BETWEEN ? AND ?${scope.sql}
                  ORDER BY createdAt DESC`,
                 [startDate, endDate, ...scope.values],
                 (err, rows) => {
@@ -1071,7 +1164,7 @@ class Transaction {
                         SELECT SUM(refundAmount) FROM refunds WHERE refunds.transactionId = transactions.id
                     ), 0)) as maxAmount
                  FROM transactions 
-                 WHERE voidedAt IS NULL AND DATE(createdAt) BETWEEN ? AND ?${scope.sql}`,
+                 WHERE voidedAt IS NULL AND date(createdAt, '+8 hours') BETWEEN ? AND ?${scope.sql}`,
                 [startDate, endDate, ...scope.values],
                 (err, row) => {
                     if (err) reject(err);
@@ -1098,7 +1191,7 @@ class Transaction {
                         SELECT SUM(refundAmount) FROM refunds WHERE refunds.transactionId = transactions.id
                     ), 0)) as total
                  FROM transactions 
-                 WHERE voidedAt IS NULL AND DATE(createdAt) BETWEEN ? AND ?${scope.sql}
+                 WHERE voidedAt IS NULL AND date(createdAt, '+8 hours') BETWEEN ? AND ?${scope.sql}
                  GROUP BY paymentMethod
                  ORDER BY total DESC`,
                 [startDate, endDate, ...scope.values],
