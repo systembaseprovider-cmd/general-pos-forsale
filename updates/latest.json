@@ -1,0 +1,7 @@
+{
+  "version": "1.0.4",
+  "releaseDate": "2026-11-04",
+  "downloadUrl": null,
+  "sha512": null,
+  "releaseNotes": "Initial Render update feed. Add the GitHub Release installer URL and SHA-512 checksum when publishing the next version."
+}

@@ -1,0 +1,13 @@
+services:
+  - type: web
+    runtime: static
+    name: general-pos-updates
+    buildCommand: echo "Publishing General POS update feed"
+    staticPublishPath: ./updates
+    headers:
+      - path: /latest.json
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
