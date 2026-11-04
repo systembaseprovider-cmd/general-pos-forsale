@@ -1905,6 +1905,7 @@
       </div>
 
       <div class="modal-footer">
+        <button class="modal-btn modal-btn-confirm" id="btn-add-customer" style="background:#0284c7;">Add Customer</button>
         <button class="modal-btn modal-btn-cancel" id="btn-close-customer">Close</button>
       </div>
     </div>
@@ -2044,11 +2045,13 @@
       <div class="modal-body admin-settings-body">
         <nav class="settings-tabs" id="admin-settings-tabs" aria-label="Admin modules">
           <button type="button" class="settings-tab active" data-settings-tab="inventory">Inventory</button>
+          <button type="button" class="settings-tab" data-settings-tab="purchases">Purchase Receiving</button>
           <button type="button" class="settings-tab" data-settings-tab="products">Products List</button>
           <button type="button" class="settings-tab" data-settings-tab="users">User Management</button>
           <button type="button" class="settings-tab" data-settings-tab="branding">App Branding</button>
           <button type="button" class="settings-tab" data-settings-tab="readings">X/Z Reading</button>
           <button type="button" class="settings-tab" data-settings-tab="updates">Updates</button>
+          <button type="button" class="settings-tab" data-settings-tab="backups">Backup & Restore</button>
         </nav>
         <div class="settings-message" id="admin-settings-message" aria-live="polite"></div>
 
@@ -2098,6 +2101,11 @@
           </div>
         </section>
 
+        <section class="settings-panel" data-settings-panel="purchases">
+          <div><h3>Supplier & Purchase Receiving</h3><p style="font-size:.82rem;color:#64748b;margin-top:4px;">Receiving adds stock immediately and records it in inventory history.</p></div>
+          <form id="supplier-form" class="settings-inline-actions" style="margin:12px 0"><input id="supplier-name" maxlength="160" required placeholder="New supplier name"><input id="supplier-phone" maxlength="50" placeholder="Phone"><button type="submit" class="settings-small-btn">Add Supplier</button><span id="supplier-message" class="settings-message"></span></form>
+          <form id="purchase-receipt-form" style="padding:14px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc"><div class="settings-form-grid"><label class="settings-field">Supplier<select id="purchase-supplier" required></select></label><label class="settings-field">Product<select id="purchase-product" required></select></label><label class="settings-field">Quantity<input id="purchase-quantity" type="number" min="1" step="1" value="1" required></label><label class="settings-field">Unit Cost<input id="purchase-unit-cost" type="number" min="0" step=".01" value="0" required></label><label class="settings-field">Supplier Invoice No.<input id="purchase-invoice" maxlength="120"></label></div><div class="settings-inline-actions" style="margin-top:10px"><button type="submit" class="settings-small-btn">Receive Stock</button><span id="purchase-message" class="settings-message"></span></div></form>
+        </section>
         <section class="settings-panel" data-settings-panel="products">
           <div>
             <h3>Products List</h3>
@@ -2283,6 +2291,15 @@
             <div class="settings-inline-actions" style="margin-top: 12px;">
               <button type="button" class="settings-small-btn" id="btn-check-for-update">Check for Update</button>
             </div>
+          </div>
+        </section>
+        <section class="settings-panel" data-settings-panel="backups">
+          <div class="settings-card">
+            <h3>Backup & Restore</h3>
+            <p>Restore applies only after General POS is closed and opened again. A safety copy of the current database is kept.</p>
+            <button type="button" class="settings-small-btn" id="btn-create-backup">Create backup now</button>
+            <div id="backup-status" role="status" style="margin:12px 0;"></div>
+            <div id="backup-list"></div>
           </div>
         </section>
       </div>
@@ -2536,6 +2553,9 @@
       changePasswordModal.classList.add('active');
       changePasswordModal.setAttribute('aria-hidden', 'false');
       currentPasswordInput.focus();
+    });
+    document.getElementById('tool-user').addEventListener('click', () => {
+      document.getElementById('btn-change-pin').click();
     });
     document.getElementById('change-password-close').addEventListener('click', closeChangePasswordModal);
     document.getElementById('change-password-cancel').addEventListener('click', closeChangePasswordModal);
@@ -3033,7 +3053,7 @@
     renderCart();
 
     let brandingSettings = {
-      appName: 'POS Store',
+      appName: 'pos-catalog.com',
       logoDataUrl: null,
       address: '',
       tin: '',
@@ -3060,7 +3080,7 @@
         throw new Error(result.message || `Branding settings failed with status ${response.status}`);
       }
       brandingSettings = { ...brandingSettings, ...result.data };
-      document.title = brandingSettings.appName || 'POS Store';
+      document.title = brandingSettings.appName || 'pos-catalog.com';
     }
 
     loadBrandingSettings().catch(error => {
@@ -3155,8 +3175,17 @@
     document.getElementById('receipt-modal-close-btn').addEventListener('click', closeReceiptModal);
     document.getElementById('btn-modal-new-sale').addEventListener('click', closeReceiptModal);
 
-    document.getElementById('btn-modal-print-receipt').addEventListener('click', () => {
-      window.print();
+    document.getElementById('btn-modal-print-receipt').addEventListener('click', async () => {
+      const button = document.getElementById('btn-modal-print-receipt');
+      if (!window.posDesktop?.printReceipt) return window.print();
+      button.disabled = true;
+      try {
+        await window.posDesktop.printReceipt(thermalReceiptArea.innerHTML);
+      } catch (error) {
+        alert(`Hindi na-print ang receipt: ${error.message}`);
+      } finally {
+        button.disabled = false;
+      }
     });
 
     // REPRINT RECEIPT MODAL LOGIC
@@ -3641,17 +3670,20 @@
       });
       setSettingsMessage('');
       if (module === 'inventory') loadInventoryProducts();
+      if (module === 'purchases') loadPurchaseReceiving();
       if (module === 'products') loadProductCatalog();
       if (module === 'users') loadManagedUsers();
       if (module === 'branding') loadBrandingForm();
       if (module === 'readings') loadReadingsPanel();
       if (module === 'updates') loadUpdateStatus();
+      if (module === 'backups') loadBackups();
     }
 
     function openAdminSettings() {
       const isAdmin = currentUser?.role === 'admin';
       const access = {
         inventory: isAdmin || canAccessModule('inventory'),
+        purchases: isAdmin || canAccessModule('inventory'),
         products: isAdmin || canAccessModule('products'),
         users: isAdmin,
         branding: isAdmin,
@@ -3674,6 +3706,22 @@
     document.getElementById('tool-settings').addEventListener('click', openAdminSettings);
     document.getElementById('admin-settings-close').addEventListener('click', closeAdminSettings);
     document.getElementById('admin-settings-close-footer').addEventListener('click', closeAdminSettings);
+
+    async function loadPurchaseReceiving() {
+      try {
+        const [suppliers, products] = await Promise.all([settingsRequest('/api/suppliers'), settingsRequest('/api/products')]);
+        document.getElementById('purchase-supplier').innerHTML = suppliers.data.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join('') || '<option value="">Add a supplier first</option>';
+        document.getElementById('purchase-product').innerHTML = products.data.map(p => `<option value="${p.id}">${escapeHTML(p.name)} (${escapeHTML(p.code)})</option>`).join('');
+      } catch (error) { setSettingsMessage(error.message, true); }
+    }
+    document.getElementById('supplier-form').addEventListener('submit', async event => {
+      event.preventDefault(); const message = document.getElementById('supplier-message');
+      try { await settingsRequest('/api/suppliers', { method: 'POST', body: JSON.stringify({ name: document.getElementById('supplier-name').value, phone: document.getElementById('supplier-phone').value }) }); event.target.reset(); message.textContent = 'Supplier added.'; await loadPurchaseReceiving(); } catch (error) { message.textContent = error.message; }
+    });
+    document.getElementById('purchase-receipt-form').addEventListener('submit', async event => {
+      event.preventDefault(); const message = document.getElementById('purchase-message');
+      try { const result = await settingsRequest('/api/suppliers/receipts', { method: 'POST', body: JSON.stringify({ supplierId: Number(document.getElementById('purchase-supplier').value), supplierInvoiceNo: document.getElementById('purchase-invoice').value, items: [{ productId: Number(document.getElementById('purchase-product').value), quantity: Number(document.getElementById('purchase-quantity').value), unitCost: Number(document.getElementById('purchase-unit-cost').value) }] }) }); message.textContent = `Received. Reference: ${result.data.receiptNo}`; loadInventoryProducts(); } catch (error) { message.textContent = error.message; }
+    });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && adminSettingsModal.classList.contains('active')) {
         closeAdminSettings();
@@ -3684,6 +3732,24 @@
     document.getElementById('z-reading-load').addEventListener('click', loadZReading);
     document.getElementById('z-reading-close').addEventListener('click', closeZReading);
     document.getElementById('btn-check-for-update').addEventListener('click', loadUpdateStatus);
+    document.getElementById('btn-create-backup').addEventListener('click', async () => {
+      const status = document.getElementById('backup-status');
+      status.textContent = 'Creating backup…';
+      try { await settingsRequest('/api/backups', { method: 'POST' }); status.textContent = 'Backup created.'; await loadBackups(); }
+      catch (error) { status.textContent = `Backup failed: ${error.message}`; }
+    });
+    async function loadBackups() {
+      const list = document.getElementById('backup-list');
+      try {
+        const result = await settingsRequest('/api/backups');
+        list.innerHTML = result.data.map(item => `<div style="margin:8px 0">${escapeHTML(item.name)} <button type="button" class="settings-small-btn" data-backup="${escapeHTML(item.name)}">Restore</button></div>`).join('') || 'No backups yet.';
+        list.querySelectorAll('[data-backup]').forEach(button => button.addEventListener('click', async () => {
+          if (!confirm('Restore this backup after restart? Current data will be kept as a safety copy.')) return;
+          await settingsRequest('/api/backups/restore-request', { method: 'POST', body: JSON.stringify({ name: button.dataset.backup }) });
+          document.getElementById('backup-status').textContent = 'Restore is ready. Close and reopen General POS now.';
+        }));
+      } catch (error) { list.textContent = `Unable to load backups: ${error.message}`; }
+    }
     document.getElementById('btn-print-x-receipt').addEventListener('click', () => printBusinessReading(lastXReading, 'X', 'receipt'));
     document.getElementById('btn-print-x-bond').addEventListener('click', () => printBusinessReading(lastXReading, 'X', 'bond'));
     document.getElementById('btn-print-z-receipt').addEventListener('click', () => printBusinessReading(lastZReading, 'Z', 'receipt'));
@@ -3772,7 +3838,7 @@
         : '';
       printArea.className = format === 'bond' ? 'bond-format' : 'receipt-format';
       printArea.innerHTML = `
-        <div class="reading-print-title">${escapeHTML(brandingSettings.appName || 'GENERAL POS')}</div>
+        <div class="reading-print-title">${escapeHTML(brandingSettings.appName || 'pos-catalog.com')}</div>
         <div class="reading-print-title">${title}</div>
         <div class="reading-print-meta">Business Date: ${escapeHTML(reading.businessDate)} | ${escapeHTML(reading.timeZone || 'Asia/Manila')}</div>
         <div class="reading-print-meta">${escapeHTML(status)}</div>
@@ -4837,6 +4903,9 @@
       ewalletModal.classList.add('active');
       setTimeout(() => ewalletRefInput.focus(), 100);
     });
+    document.getElementById('tool-wallet').addEventListener('click', () => {
+      document.getElementById('btn-ewallet-payment').click();
+    });
 
     function selectWalletProvider(el) {
       document.querySelectorAll('.ewallet-option').forEach(opt => opt.classList.remove('selected'));
@@ -4967,14 +5036,21 @@
     const custSearchInput = document.getElementById('cust-search-input');
     const customerDirectoryList = document.getElementById('customer-directory-list');
 
-    document.getElementById('btn-customer-lookup').addEventListener('click', () => {
+    document.getElementById('btn-customer-lookup').addEventListener('click', async () => {
       custSearchInput.value = "";
-      renderCustomerDirectory(customerDatabase);
+      await loadCustomerDirectory();
       customerModal.classList.add('active');
     });
 
     document.getElementById('customer-modal-close-btn').addEventListener('click', () => customerModal.classList.remove('active'));
     document.getElementById('btn-close-customer').addEventListener('click', () => customerModal.classList.remove('active'));
+    document.getElementById('btn-add-customer').addEventListener('click', async () => {
+      const name = (prompt('Customer name:', custSearchInput.value) || '').trim();
+      if (!name) return;
+      const phone = (prompt('Phone number (optional):', '') || '').trim();
+      try { const result = await settingsRequest('/api/customers', { method: 'POST', body: JSON.stringify({ name, phone }) }); accountInput.value = result.data.name; await loadCustomerDirectory(); }
+      catch (error) { alert(error.message); }
+    });
 
     function renderCustomerDirectory(list) {
       customerDirectoryList.innerHTML = "";
@@ -4986,10 +5062,10 @@
             <div class="customer-avatar">${c.name.charAt(0)}</div>
             <div style="font-weight: 700; color: #1e293b;">${c.name}</div>
           </div>
-          <span class="cust-tag ${c.tagClass}">${c.tag}</span>
+          <span class="cust-tag">${Number(c.loyaltyPoints || 0)} points</span>
         `;
         item.addEventListener('click', () => {
-          accountInput.value = `${c.name} (${c.tag})`;
+          accountInput.value = c.name;
           customerModal.classList.remove('active');
         });
         customerDirectoryList.appendChild(item);
@@ -4997,9 +5073,11 @@
     }
 
     function filterCustomerDirectory() {
-      const q = custSearchInput.value.toLowerCase().trim();
-      const filtered = customerDatabase.filter(c => c.name.toLowerCase().includes(q) || c.tag.toLowerCase().includes(q));
-      renderCustomerDirectory(filtered);
+      loadCustomerDirectory(custSearchInput.value);
+    }
+    async function loadCustomerDirectory(query = '') {
+      try { const result = await settingsRequest(`/api/customers?q=${encodeURIComponent(query)}`); renderCustomerDirectory(result.data); }
+      catch (error) { customerDirectoryList.textContent = error.message; }
     }
 
     // VOID CART

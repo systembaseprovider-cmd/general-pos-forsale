@@ -1,7 +1,7 @@
 const db = require('../database');
 
 const DEFAULT_SETTINGS = Object.freeze({
-    appName: 'POS Store',
+    appName: 'pos-catalog.com',
     logoDataUrl: null,
     address: '',
     tin: '',

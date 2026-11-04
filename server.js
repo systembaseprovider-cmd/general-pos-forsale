@@ -96,6 +96,9 @@ app.use("/api/settings", require("./src/routes/settings.routes"));
 app.use("/api/transactions", require("./src/routes/transaction.routes"));
 app.use("/api/readings", require("./src/routes/reading.routes"));
 app.use("/api/updates", require("./src/routes/update.routes"));
+app.use("/api/backups", require("./src/routes/backup.routes"));
+app.use("/api/suppliers", require("./src/routes/supplier.routes"));
+app.use("/api/customers", require("./src/routes/customer.routes"));
 
 // ========================================
 // LOGIN / HOME
@@ -134,14 +137,15 @@ app.use((req, res) => {
 // START SERVER
 // ========================================
 
-const server = app.listen(PORT, "127.0.0.1", () => {
+const bindHost = process.env.POS_BIND_HOST === '0.0.0.0' ? '0.0.0.0' : '127.0.0.1';
+const server = app.listen(PORT, bindHost, () => {
 
     console.log("");
     console.log("========================================");
     console.log("        GENERAL POS SYSTEM");
     console.log("========================================");
     const port = server.address().port;
-    console.log(`Server : http://127.0.0.1:${port}`);
+    console.log(`Server : http://${bindHost}:${port}`);
     console.log(`Health : http://127.0.0.1:${port}/api/health`);
     console.log("========================================");
     console.log("SERVER STATUS: RUNNING");

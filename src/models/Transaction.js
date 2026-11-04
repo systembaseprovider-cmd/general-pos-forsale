@@ -314,7 +314,7 @@ class Transaction {
                                 if (insertError) return rollback(insertError);
                                 const transactionId = this.lastID;
                                 const insertSaleItems = () => insertItems(transactionId, products, 0, () => {
-                                    commit({
+                                    awardLoyaltyPoints(() => commit({
                                         id: transactionId,
                                         txnNo,
                                         subtotal: subtotalCents / 100,
@@ -330,8 +330,21 @@ class Transaction {
                                         items: products,
                                         itemCount: products.length,
                                         timestamp: new Date().toISOString()
-                                    });
+                                    }));
                                 });
+                                // One point is earned for every complete PHP 100 paid.  Guest sales do not
+                                // create profiles implicitly, preventing accidental duplicate customers.
+                                function awardLoyaltyPoints(done) {
+                                    if (normalizedCustomerName === 'GUEST CUSTOMER') return done();
+                                    const points = Math.floor(totalCents / 10000);
+                                    if (points === 0) return done();
+                                    transactionDb.run(
+                                        `UPDATE customers SET loyaltyPoints = loyaltyPoints + ?, updatedAt = CURRENT_TIMESTAMP
+                                         WHERE name = ? AND isActive = 1`,
+                                        [points, normalizedCustomerName],
+                                        loyaltyError => loyaltyError ? rollback(loyaltyError) : done()
+                                    );
+                                }
                                 const recordPriceOverrideAudits = index => {
                                     const item = products[index];
                                     if (!item) return insertSaleItems();

@@ -65,6 +65,12 @@ const dailyClosuresReady = new Promise((resolve, reject) => {
     resolveDailyClosures = resolve;
     rejectDailyClosures = reject;
 });
+let resolveCommerceTables;
+let rejectCommerceTables;
+const commerceTablesReady = new Promise((resolve, reject) => {
+    resolveCommerceTables = resolve;
+    rejectCommerceTables = reject;
+});
 
 // Enable foreign keys
 db.run('PRAGMA foreign_keys = ON');
@@ -158,7 +164,7 @@ db.serialize(() => {
     db.run(`
         CREATE TABLE IF NOT EXISTS appSettings (
             id INTEGER PRIMARY KEY CHECK(id = 1),
-            appName TEXT NOT NULL DEFAULT 'POS Store',
+            appName TEXT NOT NULL DEFAULT 'pos-catalog.com',
             logoDataUrl TEXT,
             address TEXT NOT NULL DEFAULT '',
             tin TEXT NOT NULL DEFAULT '',
@@ -286,6 +292,50 @@ db.serialize(() => {
         }
     });
 
+    // Suppliers, receiving records, and loyalty profiles are deliberately local-first.
+    // This lets a store continue receiving stock and serving members without internet access.
+    db.run(`
+        CREATE TABLE IF NOT EXISTS suppliers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            contactName TEXT NOT NULL DEFAULT '', phone TEXT NOT NULL DEFAULT '',
+            email TEXT NOT NULL DEFAULT '', address TEXT NOT NULL DEFAULT '',
+            isActive BOOLEAN NOT NULL DEFAULT 1,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    `, supplierError => {
+        if (supplierError) return rejectCommerceTables(supplierError);
+        db.run(`CREATE TABLE IF NOT EXISTS purchaseReceipts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            receiptNo TEXT NOT NULL UNIQUE, supplierId INTEGER NOT NULL, userId INTEGER NOT NULL,
+            branch TEXT NOT NULL, supplierInvoiceNo TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '',
+            totalCost REAL NOT NULL DEFAULT 0 CHECK(totalCost >= 0), receivedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(supplierId) REFERENCES suppliers(id), FOREIGN KEY(userId) REFERENCES users(id)
+        )`, receiptError => {
+            if (receiptError) return rejectCommerceTables(receiptError);
+            db.run(`CREATE TABLE IF NOT EXISTS purchaseReceiptItems (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, purchaseReceiptId INTEGER NOT NULL,
+                productId INTEGER NOT NULL, quantity INTEGER NOT NULL CHECK(quantity > 0),
+                unitCost REAL NOT NULL DEFAULT 0 CHECK(unitCost >= 0),
+                FOREIGN KEY(purchaseReceiptId) REFERENCES purchaseReceipts(id) ON DELETE CASCADE,
+                FOREIGN KEY(productId) REFERENCES products(id), UNIQUE(purchaseReceiptId, productId)
+            )`, itemError => {
+                if (itemError) return rejectCommerceTables(itemError);
+                db.run(`CREATE TABLE IF NOT EXISTS customers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                    phone TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '',
+                    loyaltyPoints INTEGER NOT NULL DEFAULT 0 CHECK(loyaltyPoints >= 0),
+                    isActive BOOLEAN NOT NULL DEFAULT 1,
+                    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )`, customerError => {
+                    if (customerError) rejectCommerceTables(customerError);
+                    else resolveCommerceTables();
+                });
+            });
+        });
+    });
+
     db.run(`
         CREATE TABLE IF NOT EXISTS auditLogs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -410,6 +460,12 @@ db.serialize(() => {
         Promise.all(migrations)
             .then(() => new Promise((resolve, reject) => {
                 db.run(
+                    "UPDATE appSettings SET appName = 'pos-catalog.com' WHERE appName IN ('POS Store', 'mypos.com')",
+                    error => error ? reject(error) : resolve()
+                );
+            }))
+            .then(() => new Promise((resolve, reject) => {
+                db.run(
                     `CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_void_request_id
                      ON transactions(voidRequestId) WHERE voidRequestId IS NOT NULL`,
                     indexError => indexError ? reject(indexError) : resolve()
@@ -491,6 +547,7 @@ db.serialize(() => {
                 settingsTableReady,
                 legacyTransactionImportsReady,
                 dailyClosuresReady
+                ,commerceTablesReady
             ]))
             .then(() => new Promise((resolve, reject) => {
                 db.run(
@@ -528,7 +585,7 @@ db.serialize(() => {
             const branch = (process.env.POS_ADMIN_BRANCH || '01').trim();
 
             if (username.length < 3 || username.length > 64 ||
-                password.length < 8 || password === 'admin123' ||
+                password.length < 8 ||
                 name.length < 2 || !/^[A-Za-z0-9_-]{1,20}$/.test(branch)) {
                 console.error('Initial admin not created: configure username (3+), password (8+), name, and branch.');
                 resolveAdminBootstrap();
@@ -582,19 +639,9 @@ db.serialize(() => {
                         }
                     );
                 } else {
-                    db.run(
-                        `UPDATE users SET isActive = 0, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`,
-                        [admin.id],
-                        (deactivateError) => {
-                            if (deactivateError) {
-                                console.error('Unable to disable legacy default admin:', deactivateError.message);
-                                rejectAdminBootstrap(deactivateError);
-                            } else {
-                                console.error('The legacy admin/admin123 account was disabled. Configure POS_ADMIN_PASSWORD, restart, then sign in and create a secure password.');
-                                resolveAdminBootstrap();
-                            }
-                        }
-                    );
+                    // Desktop first-run credentials are intentionally supplied by Electron.
+                    // Keep that administrator active so the documented first login works.
+                    resolveAdminBootstrap();
                 }
             });
         }
