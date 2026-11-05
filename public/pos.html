@@ -2583,7 +2583,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `******`
+            'Authorization': `Bearer ${authToken}`
           },
           body: JSON.stringify({
             currentPin: currentPasswordInput.value,
@@ -3516,7 +3516,7 @@
       voidSalePreview = null;
       try {
         const response = await fetch(`/api/transactions/void-preview/${encodeURIComponent(txnNo)}`, {
-          headers: { 'Authorization': `******'authToken')}` }
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
         });
         const data = await response.json();
         if (!response.ok || !data.success || !data.data) {
@@ -3583,7 +3583,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `******'authToken')}`
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
           },
           body: JSON.stringify(pendingVoidRequest)
         });
@@ -5100,7 +5100,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `******`
+            'Authorization': `Bearer ${authToken}`
           },
           body: JSON.stringify({
             reason,
@@ -5196,7 +5196,7 @@
       list.textContent = 'Loading audit log...';
       try {
         const response = await fetch('/api/audit?limit=100', {
-          headers: { 'Authorization': `******` }
+          headers: { 'Authorization': `Bearer ${authToken}` }
         });
         const data = await response.json();
         if (!response.ok || !data.success || !Array.isArray(data.data)) {

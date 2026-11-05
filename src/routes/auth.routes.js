@@ -1,15 +1,38 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
 const { generateToken, verifyToken, requireRole } = require('../middleware/auth');
 const { DEFAULT_CASHIER_PERMISSIONS } = require('../services/modulePermissions');
 
 const router = express.Router();
 
+// Five failed attempts from one device are blocked for 15 minutes.  The
+// response stays generic so an attacker cannot enumerate usernames.
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many sign-in attempts. Try again in 15 minutes.' }
+});
+
+function recordLoginAudit(user, eventType, reason, req) {
+    if (!user) return;
+    AuditLog.createOnConnection(require('../database'), {
+        eventType,
+        userId: user.id,
+        branch: user.branch,
+        reason,
+        details: { ip: req.ip, userAgent: String(req.get('user-agent') || '').slice(0, 200) }
+    }).catch(error => console.error('Login audit error:', error));
+}
+
 /**
  * POST /api/auth/login
  * Authenticate user with username and password
  */
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
     try {
         const { username, pin } = req.body;
 
@@ -40,6 +63,7 @@ router.post('/login', async (req, res) => {
         const isPasswordValid = User.verifyPassword(trimmedPin, user.password);
 
         if (!isPasswordValid) {
+            recordLoginAudit(user, 'LOGIN_FAILED', 'Incorrect password/PIN', req);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid username or PIN'
@@ -48,6 +72,7 @@ router.post('/login', async (req, res) => {
 
         // Generate JWT token
         const token = generateToken(user);
+        recordLoginAudit(user, 'LOGIN_SUCCEEDED', 'User signed in', req);
 
         // Return success with user info and token
         return res.status(200).json({

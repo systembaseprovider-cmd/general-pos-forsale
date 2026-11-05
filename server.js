@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
+const helmet = require('helmet');
 require("./src/services/loadEnv")();
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
@@ -47,6 +48,8 @@ function releaseServerLock() {
 process.on("exit", releaseServerLock);
 
 const app = express();
+app.disable('x-powered-by');
+app.set('trust proxy', false);
 const PORT = Number(process.env.POS_PORT || 3000);
 if (!Number.isSafeInteger(PORT) || PORT < 0 || PORT > 65535) {
     throw new Error("POS_PORT must be a valid port number.");
@@ -62,8 +65,11 @@ const db = require("./src/database");
 // MIDDLEWARE
 // ========================================
 
+// Keep the desktop UI working with its existing inline styles while still
+// applying Helmet's transport, MIME-sniffing, framing, and referrer defenses.
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(async (req, res, next) => {
     try {
         await db.ready;

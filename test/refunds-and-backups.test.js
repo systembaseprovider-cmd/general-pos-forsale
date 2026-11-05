@@ -19,6 +19,7 @@ const User = require('../src/models/User');
 const AppSettings = require('../src/models/AppSettings');
 const { generateToken } = require('../src/middleware/auth');
 const { hasModulePermission } = require('../src/services/modulePermissions');
+const { getBusinessDate } = require('../src/services/businessDate');
 const { createBackup, pruneBackups } = require('../src/services/backup');
 
 function run(sql, params = []) {
@@ -143,7 +144,7 @@ test('partial refunds restore stock once, enforce remaining quantities, and upda
         /recorded refund cannot be voided/
     );
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getBusinessDate();
     const summary = await Transaction.getSalesSummary(today, today, '01', user.id);
     assert.equal(Math.round(summary.totalSales * 100), 0);
     const topProducts = await Transaction.getTopProducts(10, '01', user.id);
@@ -176,7 +177,7 @@ test('completed-sale voids restore stock once, reject refunded sales, and exclud
         referenceNo: ''
     });
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getBusinessDate();
     const summaryBeforeVoid = await Transaction.getSalesSummary(today, today, '01', user.id);
     const preview = await Transaction.getVoidPreview(txnNo, '01');
     assert.equal(preview.canVoid, true);

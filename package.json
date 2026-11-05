@@ -1,6 +1,6 @@
 {
   "name": "general-pos",
-  "version": "1.0.12",
+  "version": "1.0.15",
   "description": "A local desktop point-of-sale system powered by SQLite.",
   "main": "electron/main.js",
   "scripts": {
@@ -19,6 +19,8 @@
     "bcryptjs": "^2.4.3",
     "electron-updater": "^6.8.11",
     "express": "^5.2.1",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^9.11.4",
     "sqlite3": "^6.0.1"
@@ -61,7 +63,12 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
-    "publish": [{ "provider": "generic", "url": "https://pos-catalog.com/updates" }]
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://pos-catalog.com/updates"
+      }
+    ]
   },
   "allowScripts": {
     "electron-winstaller@5.4.0": true,

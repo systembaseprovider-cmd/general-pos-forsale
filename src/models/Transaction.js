@@ -314,7 +314,20 @@ class Transaction {
                                 if (insertError) return rollback(insertError);
                                 const transactionId = this.lastID;
                                 const insertSaleItems = () => insertItems(transactionId, products, 0, () => {
-                                    awardLoyaltyPoints(() => commit({
+                                    AuditLog.createOnConnection(transactionDb, {
+                                        eventType: 'TRANSACTION_COMPLETED',
+                                        userId,
+                                        branch,
+                                        transactionId,
+                                        reason: `Completed sale ${txnNo}`,
+                                        details: {
+                                            transactionNumber: txnNo,
+                                            customerName: normalizedCustomerName,
+                                            paymentMethod: normalizedPaymentMethod,
+                                            totalAmount: totalCents / 100,
+                                            itemCount: products.length
+                                        }
+                                    }).then(() => awardLoyaltyPoints(() => commit({
                                         id: transactionId,
                                         txnNo,
                                         subtotal: subtotalCents / 100,
@@ -330,7 +343,7 @@ class Transaction {
                                         items: products,
                                         itemCount: products.length,
                                         timestamp: new Date().toISOString()
-                                    }));
+                                    }))).catch(rollback);
                                 });
                                 // One point is earned for every complete PHP 100 paid.  Guest sales do not
                                 // create profiles implicitly, preventing accidental duplicate customers.

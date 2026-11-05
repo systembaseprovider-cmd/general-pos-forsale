@@ -83,7 +83,6 @@ async function startDesktopApp() {
 
     const { server, db, shutdown } = require('../server');
     let mainWindow;
-    let credentialsShown = false;
     const updateUrl = String(process.env.POS_UPDATE_URL || '').trim().replace(/\/$/, '');
     const updatesEnabled = /^https:\/\//.test(updateUrl);
     autoUpdater.autoDownload = true;
@@ -94,25 +93,6 @@ async function startDesktopApp() {
         dialog.showMessageBox({ type: 'info', title: 'Update ready', message: `Version ${info.version} is ready.`, detail: 'It will install automatically when General POS is closed.' });
     });
 
-    const showFirstRunCredentials = async () => {
-        if (credentialsShown) return;
-
-        const User = require('../src/models/User');
-        const user = await User.findByUsername(firstRunCredentials.username);
-        if (!user || !User.verifyPassword(firstRunCredentials.password, user.password)) {
-            fs.rmSync(credentialsPath, { force: true });
-            return;
-        }
-
-        credentialsShown = true;
-        await dialog.showMessageBox({
-            type: 'info',
-            title: 'pos-catalog.com first-time setup',
-            message: 'Your administrator account is ready.',
-            detail: `Username: ${firstRunCredentials.username}\nTemporary password: ${firstRunCredentials.password}\n\nSign in, then change this password. This message will appear again until you change it.`,
-            buttons: ['OK']
-        });
-    };
 
     const openWindow = () => {
         const address = server.address();
@@ -149,9 +129,6 @@ async function startDesktopApp() {
             mainWindow.show();
         });
         mainWindow.loadURL(`http://127.0.0.1:${address.port}/`);
-        db.ready.then(showFirstRunCredentials).catch(error => {
-            console.error('Unable to verify first-run administrator setup:', error);
-        });
         // Offline sales are never blocked: failed internet checks are intentionally non-fatal.
         if (updatesEnabled) setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 10000);
     };
